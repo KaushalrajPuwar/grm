@@ -1,0 +1,7 @@
+[project]
+name = "grm"
+version = "0.1.0"
+description = "OpenG2P Beneficiary Conversational Agent for grievance redressal over voice and chat"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
