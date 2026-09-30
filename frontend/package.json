@@ -1,0 +1,30 @@
+{
+  "name": "grm-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Demo chat front end for the GRM beneficiary conversational agent",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check:render": "node tests/render_check.mjs",
+    "check:interaction": "node tests/interaction_check.mjs",
+    "check:branch": "node tests/branch_check.mjs",
+    "check:layout": "node tests/layout_check.mjs",
+    "check:copy": "node tests/copy_audit.mjs",
+    "check": "npm run check:layout && npm run check:copy && npm run check:render && npm run check:interaction && npm run check:branch"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@fontsource-variable/source-serif-4": "^5.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "vite": "^6.0.7"
+  }
+}

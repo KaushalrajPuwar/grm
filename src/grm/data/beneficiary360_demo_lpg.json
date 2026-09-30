@@ -1,0 +1,343 @@
+{
+    "@context": "https://schemas.openg2p.org/beneficiary360/v1/context.jsonld",
+    "@id": "urn:g2p:beneficiary360:FID-9988776655:2026-08-20T09:15:00Z",
+    "@type": "Beneficiary360Response",
+    "beneficiary": {
+        "foundationalId": "FID-9988776655",
+        "matchedProgramCount": 2,
+        "matchedRegistryCount": 3
+    },
+    "bridgeProcessing": [
+        {
+            "benefitCodeMnemonic": "LPG_CYLINDER",
+            "benefitProgramMnemonic": "LPG_SUBSIDY_2026",
+            "benefitType": "COMMODITY",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "LPG_SUBSIDY_2026-CYCLE-11",
+            "disbursementEnvelopeId": "ENV-0010-11-LPG",
+            "totalDisbursementQuantity": 1,
+            "dispatchSchedule": {
+                "dispatchedDate": "2026-07-08",
+                "expectedDeliveryBy": "2026-07-11",
+                "deliveryStatus": "DELIVERED_TO_BENEFICIARY",
+                "deliveryAgentId": "DA-0442"
+            },
+            "workflow": {
+                "agencyAllocationStatus": "PROCESSED",
+                "agencyMnemonic": "AGENCY_OILDEPOT_03",
+                "agencyNotificationStatus": "PROCESSED",
+                "faResolutionStatus": "PROCESSED",
+                "geoResolutionStatus": "PROCESSED",
+                "warehouseAllocationStatus": "PROCESSED",
+                "warehouseMnemonic": "WH_LPG_CENTRAL_02",
+                "warehouseNotificationStatus": "PROCESSED",
+                "workflowType": "GOODS"
+            }
+        },
+        {
+            "benefitCodeMnemonic": "LPG_CYLINDER",
+            "benefitProgramMnemonic": "LPG_SUBSIDY_2026",
+            "benefitType": "COMMODITY",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "LPG_SUBSIDY_2026-CYCLE-12",
+            "disbursementEnvelopeId": "ENV-0010-12-LPG",
+            "totalDisbursementQuantity": 1,
+            "dispatchSchedule": {
+                "dispatchedDate": "2026-08-18",
+                "expectedDeliveryBy": "2026-08-21",
+                "deliveryStatus": "DISPATCHED_PENDING_DELIVERY",
+                "deliveryAgentId": "DA-0517",
+                "trackingReference": "TRK-20260818-0092"
+            },
+            "workflow": {
+                "agencyAllocationStatus": "PROCESSED",
+                "agencyMnemonic": "AGENCY_OILDEPOT_03",
+                "agencyNotificationStatus": "PROCESSED",
+                "faResolutionStatus": "PROCESSED",
+                "geoResolutionStatus": "PROCESSED",
+                "warehouseAllocationStatus": "PROCESSED",
+                "warehouseMnemonic": "WH_LPG_CENTRAL_02",
+                "warehouseNotificationStatus": "PROCESSED",
+                "workflowType": "GOODS"
+            }
+        },
+        {
+            "benefitCodeMnemonic": "LPG_SUBSIDY_CREDIT",
+            "benefitProgramMnemonic": "LPG_SUBSIDY_2026",
+            "benefitType": "CASH_DIGITAL",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "LPG_SUBSIDY_2026-CYCLE-13",
+            "disbursementEnvelopeId": "ENV-0010-13-CASH",
+            "disbursementRecon": {
+                "remittanceReferenceNumber": "RRN-2026082000412",
+                "reversalFound": false
+            },
+            "totalDisbursementQuantity": 300.0,
+            "subsidyReleaseStatus": "BLOCKED",
+            "blocker": {
+                "blockerCode": "AADHAAR_SEED_MISMATCH",
+                "blockerRaisedDate": "2026-08-20",
+                "blockerDescription": "Subsidy release requires a valid Aadhaar seeding against the bank account receiving the credit. The Aadhaar number on the social registry record does not match the Aadhaar seeded at the beneficiary bank for this programme.",
+                "resolutionOptionsAvailable": [
+                    {
+                        "option": "aadhaar_reseed",
+                        "label": "Re-seed Aadhaar at the bank and request re-verification",
+                        "expectedDurationDays": 7,
+                        "requiresBeneficiaryAction": true
+                    },
+                    {
+                        "option": "file_grievance_ticket",
+                        "label": "File a grievance ticket for subsidy release review",
+                        "expectedDurationDays": 15,
+                        "requiresBeneficiaryAction": false
+                    }
+                ]
+            },
+            "workflow": {
+                "fundsAvailableWithBank": 300.0,
+                "fundsBlockedWithBank": 300.0,
+                "numberOfDisbursementsReconciled": 11240,
+                "numberOfDisbursementsReversed": 0,
+                "numberOfDisbursementsShipped": 11240,
+                "sponsorBankDispatchStatus": "FAILED",
+                "workflowType": "CASH_DIGITAL"
+            }
+        }
+    ],
+    "meta": {
+        "correlationId": "my-manual-test-001",
+        "generatedAt": "2026-09-30T19:16:06Z",
+        "requestParameters": {
+            "foundationalId": "FID-9988776655",
+            "timeframe": "Timeframe-Medium"
+        },
+        "resolvedTimeframe": {
+            "end": "2026-08-20",
+            "perSourceSystem": [
+                {
+                    "end": "2026-08-20",
+                    "start": "2025-08-20",
+                    "system": "LPG_CONSUMER_REGISTRY"
+                },
+                {
+                    "end": "2026-08-20",
+                    "start": "2025-08-20",
+                    "system": "NATIONAL_SOCIAL_REGISTRY"
+                },
+                {
+                    "end": "2026-08-20",
+                    "start": "2025-08-20",
+                    "system": "PBMS"
+                },
+                {
+                    "end": "2026-08-20",
+                    "start": "2025-08-20",
+                    "system": "G2P_BRIDGE"
+                }
+            ],
+            "start": "2025-08-20"
+        },
+        "sourceSystemsQueried": [
+            "LPG_CONSUMER_REGISTRY",
+            "NATIONAL_SOCIAL_REGISTRY",
+            "PBMS",
+            "G2P_BRIDGE"
+        ],
+        "warnings": []
+    },
+    "programs": [
+        {
+            "disbursements": [
+                {
+                    "benefitCodeMnemonic": "LPG_CYLINDER",
+                    "benefitType": "COMMODITY",
+                    "cancellationStatus": "NOT_CANCELLED",
+                    "cycleMnemonic": "LPG_SUBSIDY_2026-CYCLE-11",
+                    "disbursementCycleId": "DC-0010-11",
+                    "disbursementDate": "2026-07-08",
+                    "disbursementEnvelopeId": "ENV-0010-11-LPG",
+                    "disbursementId": "DISB-88991",
+                    "disbursementQuantity": 1,
+                    "narrative": "Subsidised LPG cylinder, cycle 11, delivered 2026-07-11"
+                },
+                {
+                    "benefitCodeMnemonic": "LPG_CYLINDER",
+                    "benefitType": "COMMODITY",
+                    "cancellationStatus": "NOT_CANCELLED",
+                    "cycleMnemonic": "LPG_SUBSIDY_2026-CYCLE-12",
+                    "disbursementCycleId": "DC-0010-12",
+                    "disbursementDate": "2026-08-18",
+                    "disbursementEnvelopeId": "ENV-0010-12-LPG",
+                    "disbursementId": "DISB-90112",
+                    "disbursementQuantity": 1,
+                    "narrative": "Subsidised LPG cylinder, cycle 12, dispatched 2026-08-18, pending delivery"
+                }
+            ],
+            "enrolments": [
+                {
+                    "beneficiaryListId": "BL-0010-0005",
+                    "eligibilityProcessStatus": "PROCESSED",
+                    "enrollmentCycleId": "EC-0010-05",
+                    "enrolmentStatus": "ENROLLED",
+                    "entitlementProcessStatus": "PROCESSED",
+                    "listDate": "2026-04-01",
+                    "listMnemonic": "LPG_SUBSIDY_2026-ENROL-05"
+                },
+                {
+                    "beneficiaryListId": "BL-0010-0006",
+                    "eligibilityProcessStatus": "PROCESSED",
+                    "enrollmentCycleId": "EC-0010-06",
+                    "enrolmentStatus": "ENROLLED",
+                    "entitlementProcessStatus": "PROCESSED",
+                    "listDate": "2026-07-01",
+                    "listMnemonic": "LPG_SUBSIDY_2026-ENROL-06"
+                }
+            ],
+            "lpgConnection": {
+                "connectionNumber": "TG-4471-9920",
+                "connectionStatus": "ACTIVE",
+                "distributorMnemonic": "DIST_BLR_07",
+                "consumerCategory": "GENERAL",
+                "subsidyEnabled": true,
+                "monthlySubsidyEntitlementInr": 300,
+                "annualHouseholdIncomeCeilingInr": 120000,
+                "lastCollectedCylinderDate": "2026-07-11"
+            },
+            "programId": "PROG-0010",
+            "programMnemonic": "LPG_SUBSIDY_2026",
+            "programName": "Domestic LPG Subsidy 2026",
+            "programStatus": "ACTIVE",
+            "targetRegistry": "LPG_CONSUMER_REGISTRY"
+        },
+        {
+            "disbursements": [],
+            "enrolments": [
+                {
+                    "beneficiaryListId": "BL-0031-0004",
+                    "eligibilityProcessStatus": "PROCESSED",
+                    "enrollmentCycleId": "EC-0031-04",
+                    "enrolmentStatus": "APPLIED",
+                    "entitlementProcessStatus": "PENDING",
+                    "listDate": "2026-08-15",
+                    "listMnemonic": "PM-KUSUM-ENROL-04"
+                }
+            ],
+            "programId": "PROG-0031",
+            "programMnemonic": "SOLAR_PUMP_SUPPORT",
+            "programName": "Solar Pump Support Programme",
+            "programStatus": "ACTIVE",
+            "targetRegistry": "NATIONAL_SOCIAL_REGISTRY"
+        }
+    ],
+    "registries": [
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "first_name": "Lakshmi",
+                        "last_name": "Narayan",
+                        "source_of_income": "SMALL_BUSINESS",
+                        "lpg_consumer_class": "GENERAL"
+                    },
+                    "foundationalId": "FID-9988776655",
+                    "functionalRecordId": "LPG-REC-0001",
+                    "internalRecordId": "b1a2c3d4-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "LPG_CONSUMER",
+                    "registerName": "LPG Consumer",
+                    "tables": [
+                        {
+                            "attributes": {
+                                "connection_number": "TG-4471-9920",
+                                "connection_status": "ACTIVE",
+                                "distributor": "DIST_BLR_07",
+                                "first_lpg_connection_date": "2019-08-14"
+                            },
+                            "internalRecordId": "b1a2c3d4-0100",
+                            "linkInternalRecordId": "b1a2c3d4-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "LPG_CONNECTION",
+                            "tableName": "LPG Connection",
+                            "tables": [
+                                {
+                                    "attributes": {
+                                        "cylinder_type": "DOMESTIC_COMMERCIAL",
+                                        "last_collected_cylinder_date": "2026-07-11",
+                                        "booked_subsidy_inr": 300
+                                    },
+                                    "internalRecordId": "b1a2c3d4-0200",
+                                    "linkInternalRecordId": "b1a2c3d4-0100",
+                                    "recordStatus": "ACTIVE",
+                                    "tableMnemonic": "SUBSIDY_ACCOUNT",
+                                    "tableName": "Subsidy Account",
+                                    "tables": []
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": {
+                                "household_head": true,
+                                "number_of_children": 2,
+                                "size_of_group": 5
+                            },
+                            "internalRecordId": "b1a2c3d4-0300",
+                            "linkInternalRecordId": "b1a2c3d4-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "HOUSEHOLD",
+                            "tableName": "Household",
+                            "tables": []
+                        }
+                    ]
+                }
+            ],
+            "registryCode": "LPG_CONSUMER_REGISTRY",
+            "registryName": "LPG-Consumer-Registry",
+            "registrySystem": {
+                "baseUrl": "https://lpg-consumer-registry.example.gov",
+                "version": "1.4.0"
+            }
+        },
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "aadhaar_last4": "7788",
+                        "bank_account_masked": "XXXXXX4321",
+                        "bank_seeded_aadhaar_last4": "9912"
+                    },
+                    "foundationalId": "FID-9988776655",
+                    "functionalRecordId": "PBMS-REC-0011",
+                    "internalRecordId": "c9d0e1f2-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "SOCIAL_BENEFICIARY",
+                    "registerName": "Social Beneficiary",
+                    "tables": []
+                }
+            ],
+            "registryCode": "NATIONAL_SOCIAL_REGISTRY",
+            "registryName": "National Social Registry"
+        },
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "disability_severity": "MODERATE",
+                        "disability_type": "MOBILITY"
+                    },
+                    "foundationalId": "FID-9988776655",
+                    "functionalRecordId": "DIS-REC-0009",
+                    "internalRecordId": "e5f6a7b8-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "DISABILITY_CASE",
+                    "registerName": "Disability Case",
+                    "tables": []
+                }
+            ],
+            "registryCode": "DISABILITY_REGISTRY",
+            "registryName": "Disability-Registry"
+        }
+    ]
+}

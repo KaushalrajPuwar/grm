@@ -1,3 +1,12 @@
-"""Liveness probe."""
+"""Liveness probe. No protected data in any response here."""
 
-# TODO: GET /health returning status only, no protected data.
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+router = APIRouter(tags=["ops"])
+
+
+@router.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok", "service": "grm"}

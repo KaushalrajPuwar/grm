@@ -1,1 +1,6 @@
 /docs/*
+/var/
+.venv/
+.env
+__pycache__/
+*.pyc

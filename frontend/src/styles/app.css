@@ -1,0 +1,901 @@
+/* ==========================================================================
+   Grievance service: front end styles
+
+   The brief. A person at midnight asking why a payment did not arrive, and an
+   operator watching the machinery decide who answers. That is a records room,
+   not a marketing page. So: a warm green-black, deeply recessive conversation
+   surface, raised instrument panels beside it, one brass accent for anything
+   settled and one terracotta for anything needing action.
+
+   Two voices, and the split is the design.
+   Geist carries the interface: labels, panels, the flow map.
+   Source Serif 4 carries only what an agent says to the citizen. Prose written
+   to a person earns a text serif. Labels and data do not, so they never get one.
+   Geist Mono carries figures, because a figure is data.
+
+   Radius rule, everywhere: containers 20, message bubbles 16, controls 12.
+
+   Depth rule, everywhere: no bloom, no symmetric shadow. The conversation sits
+   BELOW the page plane in a recess; the panels sit ABOVE it, lifted. Each
+   raised surface carries a bright lip along its top edge and a self-coloured
+   edge at its own value, so separation is felt rather than drawn.
+   ========================================================================== */
+
+:root {
+  /* Warm green-black. Deliberately not the blue-charcoal every dark product
+     ships, and not pure black. */
+  --plane: #0d120e;
+  --recess: #090d0a;
+  --surface: #161d17;
+  --surface-high: #1e271f;
+  --surface-lit: #273227;
+
+  /* Bone text, warm, off-white. Never pure white. The ramp is monotonic and
+     the dim end still clears 4.5:1 on every surface it sits on, because a
+     label nobody can read is not a label. */
+  --text: #e8e6dc;
+  --text-soft: #b6b8a9;
+  --text-faint: #a8aa9b;
+  --text-ghost: #8f9182;
+
+  /* THE accent. Brass, desaturated, used only for settled and active. */
+  --brass: #c2a15c;
+  --brass-deep: #8f7434;
+  --brass-wash: #2a2415;
+
+  /* Status colour, not a second brand accent. Only ever "needs action". */
+  --clay: #c2705a;
+  --clay-wash: #2c1a15;
+
+  /* Self-coloured edges: the text colour at low opacity, so the edge belongs
+     to the surface instead of being drawn on top of it. */
+  --edge: rgba(232, 230, 220, 0.11);
+  --edge-soft: rgba(232, 230, 220, 0.06);
+  --edge-lit: rgba(232, 230, 220, 0.18);
+
+  /* The only shadow: directional, from the top left, tinted to the plane. */
+  --cast: 0 1px 0 rgba(232, 230, 220, 0.05), 0 24px 40px -32px rgba(0, 0, 0, 0.9);
+  --cast-deep: inset 0 24px 40px -28px rgba(0, 0, 0, 0.85);
+
+  /* Radius scale */
+  --r-container: 20px;
+  --r-bubble: 16px;
+  --r-control: 12px;
+
+  /* Type */
+  --ui: 'Geist Variable', 'Geist', system-ui, sans-serif;
+  --spoken: 'Source Serif 4 Variable', Georgia, serif;
+  --data: 'Geist Mono Variable', ui-monospace, monospace;
+
+  /* Layout, as specified and locked by a test */
+  --chat-share: 2fr;
+  --rail-share: 1fr;
+  --rail-top: 2fr;
+  --rail-bottom: 3fr;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmosphere. One authored wash with real falloff from a single source at the
+   top left, plus grain on the substrate. Not radial blobs, not a fixed sheet
+   dragged behind the page, and the grain never sits over text. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      148deg,
+      rgba(194, 161, 92, 0.09) 0%,
+      rgba(194, 161, 92, 0.03) 26%,
+      rgba(13, 18, 14, 0) 58%
+    ),
+    radial-gradient(120% 80% at 88% 100%, rgba(90, 120, 96, 0.07) 0%, rgba(13, 18, 14, 0) 60%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.42'/%3E%3C/svg%3E");
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 40;
+  padding: 12px 18px;
+  background: var(--brass);
+  color: #14110a;
+  border-radius: 0 0 var(--r-control) 0;
+  font-weight: 600;
+}
+
+.skip:focus {
+  left: 0;
+}
+
+/* ==========================================================================
+   Shell
+   ========================================================================== */
+
+.shell {
+  display: grid;
+  /* Two thirds conversation, one third instruments. Fixed by spec. */
+  grid-template-columns: var(--chat-share) var(--rail-share);
+  height: 100dvh;
+  padding: 16px;
+  gap: 16px;
+}
+
+/* ==========================================================================
+   Conversation. A recess in the page, not a card sitting on it.
+   ========================================================================== */
+
+.chat {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 0;
+  position: relative;
+  background: var(--recess);
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-container);
+  box-shadow: var(--cast-deep);
+  overflow: hidden;
+}
+
+/* Masthead. A wordmark set in the face, not a logo tile. */
+.chat__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 30px 20px;
+  border-bottom: 1px solid var(--edge-soft);
+  background: linear-gradient(180deg, rgba(232, 230, 220, 0.035), rgba(232, 230, 220, 0));
+}
+
+.chat__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+
+.chat__sub {
+  margin: 8px 0 0;
+  font-family: var(--spoken);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1.22;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+  max-width: 24ch;
+  color: var(--text);
+}
+
+.chat__session {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 0 0 auto;
+  font-family: var(--data);
+  font-size: 11px;
+  color: var(--text-ghost);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat__session b {
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.chat__session .is-open {
+  color: var(--brass);
+}
+
+.chat__log {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 30px 30px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  scrollbar-width: thin;
+  scrollbar-color: #2b332b transparent;
+}
+
+.chat__log::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat__log::-webkit-scrollbar-thumb {
+  background: #2b332b;
+  border-radius: 99px;
+  border: 3px solid var(--recess);
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 68ch;
+}
+
+.turn--mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.turn__who {
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-ghost);
+}
+
+.bubble {
+  padding: 15px 19px;
+  border-radius: var(--r-bubble);
+  text-wrap: pretty;
+}
+
+.bubble--theirs {
+  /* An agent speaking: a text serif, on a surface lifted one step out of the
+     recess, with a warm lip along its top edge. */
+  font-family: var(--spoken);
+  font-size: 17px;
+  line-height: 1.56;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--edge-soft);
+  border-top-color: var(--edge);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 0 rgba(232, 230, 220, 0.06) inset, 0 18px 30px -26px rgba(0, 0, 0, 0.9);
+}
+
+.bubble--mine {
+  /* The citizen: the brass, with dark ink on it. The only place the accent
+     carries body text, because it is the only place it must. */
+  font-size: 15px;
+  line-height: 1.5;
+  color: #17130a;
+  background: var(--brass);
+  border-bottom-right-radius: 6px;
+}
+
+.bubble p {
+  margin: 0 0 11px;
+}
+
+.bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.bubble ul {
+  margin: 4px 0 11px;
+  padding-left: 20px;
+}
+
+.bubble li {
+  margin-bottom: 7px;
+}
+
+.bubble li:last-child {
+  margin-bottom: 0;
+}
+
+.bubble strong {
+  font-weight: 600;
+  color: #f2efe2;
+}
+
+.bubble--mine strong {
+  color: #17130a;
+}
+
+.bubble code,
+.bubble .figure {
+  font-family: var(--data);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Waiting. Three dots, and a neutral label that changes each wait. */
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  align-self: flex-start;
+  padding: 15px 20px;
+  background: var(--surface);
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-bubble);
+  border-bottom-left-radius: 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+.waiting__label {
+  min-width: 9ch;
+  animation: label-in 320ms ease both;
+}
+
+@keyframes label-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 8px;
+}
+
+.dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--brass);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+
+.dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Composer: a trough in the recess, with the accent only on the send mark. */
+
+.composer {
+  padding: 16px 30px 22px;
+  border-top: 1px solid var(--edge-soft);
+  background: var(--recess);
+}
+
+.composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.composer__field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #0b100c;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-control);
+  padding: 0 6px 0 16px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.composer__field:focus-within {
+  border-color: var(--brass-deep);
+  background: #0d130e;
+}
+
+.composer__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  resize: none;
+  padding: 14px 0;
+  font-family: var(--spoken);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  max-height: 132px;
+}
+
+.composer__input:focus {
+  outline: none;
+}
+
+.composer__input::placeholder {
+  color: var(--text-ghost);
+}
+
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-ghost);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.iconbtn:hover {
+  background: var(--surface-high);
+  color: var(--text-soft);
+}
+
+.sendbtn {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border: 1px solid var(--brass-deep);
+  border-radius: 14px;
+  background: var(--brass);
+  color: #17130a;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.sendbtn:hover:not(:disabled) {
+  background: #d3b06a;
+  border-color: #d3b06a;
+}
+
+/* A push, not a boop. */
+.sendbtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.sendbtn:disabled {
+  background: var(--surface);
+  border-color: var(--edge-soft);
+  color: var(--text-ghost);
+  cursor: default;
+}
+
+.composer__hint {
+  margin: 10px 2px 0;
+  font-size: 11.5px;
+  color: var(--text-ghost);
+}
+
+.composer__hint kbd {
+  font-family: var(--data);
+  font-size: 10.5px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  padding: 1px 5px;
+  background: var(--surface);
+  color: var(--text-faint);
+}
+
+.composer__error {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  color: var(--clay);
+}
+
+/* ==========================================================================
+   Instruments. Raised above the page plane, so they read as read-outs.
+   ========================================================================== */
+
+.rail {
+  display: grid;
+  /* 40 up top, 60 below, as specified. */
+  grid-template-rows: var(--rail-top) var(--rail-bottom);
+  gap: 16px;
+  min-height: 0;
+}
+
+.panel {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-container);
+  box-shadow: var(--cast);
+  overflow: hidden;
+}
+
+/* The lit lip. This is what makes a panel read as raised instead of drawn. */
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(232, 230, 220, 0.16), rgba(232, 230, 220, 0.04));
+}
+
+.panel__head {
+  padding: 18px 22px 15px;
+  border-bottom: 1px solid var(--edge-soft);
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.panel__body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: #2b332b transparent;
+}
+
+/* Who is answering, right now */
+
+.speaking {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  margin-bottom: 6px;
+}
+
+.speaking__role {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  line-height: 1.1;
+  text-wrap: balance;
+  color: var(--text);
+}
+
+.speaking__note {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.handoff {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 0;
+  border-top: 1px solid var(--edge-soft);
+}
+
+.handoff:last-of-type {
+  padding-bottom: 0;
+}
+
+.handoff__mark {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--brass);
+}
+
+.handoff--to_reasoning .handoff__mark {
+  background: var(--text-soft);
+}
+
+.handoff--qa_fail .handoff__mark {
+  background: var(--clay);
+}
+
+.handoff__text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-soft);
+}
+
+.handoff__text b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.handoff__why {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-ghost);
+}
+
+.internal {
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--edge);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-ghost);
+}
+
+.internal b {
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.empty {
+  margin: 0;
+  font-family: var(--spoken);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  max-width: 34ch;
+}
+
+/* The two-case flow map */
+
+.flow__lede {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+.tree {
+  display: grid;
+}
+
+.node {
+  padding: 12px 14px;
+  border-radius: var(--r-control);
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px solid var(--edge-soft);
+  background: var(--surface-high);
+  color: var(--text-soft);
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease;
+}
+
+.node--root {
+  color: var(--text);
+}
+
+.node--branch {
+  text-align: center;
+  background: var(--recess);
+  border-color: var(--edge);
+}
+
+.node--on {
+  background: var(--brass-wash);
+  border-color: var(--brass-deep);
+  color: var(--brass);
+  font-weight: 600;
+}
+
+.node--on.node--ticked {
+  background: var(--clay-wash);
+  border-color: rgba(194, 112, 90, 0.5);
+  color: var(--clay);
+}
+
+.node--off {
+  opacity: 0.46;
+}
+
+.node__sub {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-ghost);
+}
+
+.node--on .node__sub {
+  color: inherit;
+  opacity: 0.82;
+}
+
+/* Connectors carry a real taper and round caps, not a bare drawn rule. */
+
+.link {
+  justify-self: center;
+  width: 1px;
+  height: 15px;
+  background: linear-gradient(180deg, var(--edge-lit), var(--edge));
+  border-radius: 99px;
+}
+
+.fork {
+  position: relative;
+  height: 20px;
+  margin: 0 14px;
+}
+
+.fork::before,
+.fork::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 11px;
+  background: var(--edge-lit);
+  border-radius: 99px;
+}
+
+.fork::before {
+  left: 0;
+}
+
+.fork::after {
+  right: 0;
+}
+
+.fork__base {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--edge-lit);
+  border-radius: 99px;
+}
+
+.fork__stem {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 11px;
+  background: var(--edge-lit);
+  border-radius: 99px;
+}
+
+.legs {
+  display: grid;
+  gap: 14px;
+}
+
+/* Routes are numbered, not captioned. A numeral is data, so it wears the mono
+   and gets none of the panel's lettered label treatment. */
+.leg__cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+  font-family: var(--data);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-ghost);
+}
+
+.leg__cap::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--edge-soft);
+  border-radius: 99px;
+}
+
+/* ==========================================================================
+   Narrow screens. The two thirds split cannot survive, so it becomes one
+   column with the instruments below the conversation.
+   ========================================================================== */
+
+@media (max-width: 940px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(62dvh, 1fr) auto;
+    height: auto;
+    min-height: 100dvh;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .chat {
+    min-height: 62dvh;
+  }
+
+  .rail {
+    grid-template-rows: auto auto;
+    gap: 12px;
+  }
+
+  .panel {
+    max-height: 62dvh;
+  }
+
+  .chat__head,
+  .chat__log,
+  .composer,
+  .panel__body {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .chat__sub {
+    font-size: 23px;
+  }
+
+  .speaking__role {
+    font-size: 25px;
+  }
+
+  .turn {
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Motion stays small, and collapses entirely when asked.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .dots span {
+    opacity: 0.7;
+  }
+
+  .waiting__label {
+    animation: none;
+  }
+}
