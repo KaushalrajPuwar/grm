@@ -146,13 +146,22 @@ async def _handle_verified(
 def _handle_pre_auth(
     session: AuthSession, user_text: str, client: Beneficiary360Client, state: TurnState
 ) -> TurnState:
-    if not user_text.strip() and state.stage == "greet":
+    opening = state.stage == "greet"
+
+    if not user_text.strip() and opening:
         state.stage = "id_prompt"
         state.reply = WELCOME
         state.owner = "chat"
         return state
 
     reply, stage = handle_gate_message(session, user_text, client)
+
+    # A caller may open with speech ("hello?") rather than an identifier. On the
+    # very first turn that is not a failed lookup, so answer with the greeting
+    # instead of a rejection.
+    if opening and not session.verified and stage == "id_prompt":
+        reply = WELCOME
+
     get_logger().info("gate exchange", stage="gate", outcome=stage)
     state.stage = stage
     state.owner = "chat"

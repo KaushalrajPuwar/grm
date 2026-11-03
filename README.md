@@ -198,6 +198,12 @@ Verify the contract end to end while the MCP server is running:
 python scripts/mcp_smoke.py --base http://127.0.0.1:8100
 ```
 
+Read a full conversation in order, with every reply printed:
+
+```bash
+python scripts/mcp_walkthrough.py --base http://127.0.0.1:8100
+```
+
 ## Configuration
 
 | Variable | Purpose |
