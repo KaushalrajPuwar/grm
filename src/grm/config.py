@@ -13,7 +13,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
+# The repo's .env is authoritative for local runs. Without override, a stale
+# API_KEY exported in the shell silently shadows a renewed one in .env.
+load_dotenv(override=True)
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent.parent
@@ -40,6 +42,11 @@ class Settings(BaseSettings):
     modelid_1: str = ""
     modelid_2: str = ""
     modelid_3: str = ""
+
+    #: One switch for the QA gate. False ships the reasoning agent's candidate
+    #: directly. The QA code and prompt stay intact, so turning it back on is
+    #: one environment change and a restart.
+    qa_enabled: bool = False
 
     @property
     def chat_model(self) -> str:

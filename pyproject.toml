@@ -13,6 +13,7 @@ dependencies = [
     "langchain-core>=1.6.6",
     "langchain-openai>=1.6.7",
     "structlog>=26.1.0",
+    "fastmcp>=4.1.4",
 ]
 
 [project.optional-dependencies]
@@ -55,12 +56,13 @@ warn_unreachable = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
-# The model clients and FastAPI are untyped at the boundary; the contracts
-# inside our own modules are still checked.
+# The model clients and the transport libraries are untyped at the boundary;
+# the contracts inside our own modules are still checked.
 module = [
     "langchain_core.*",
     "langchain_openai.*",
     "structlog.*",
     "uvicorn.*",
+    "fastmcp.*",
 ]
 ignore_missing_imports = true

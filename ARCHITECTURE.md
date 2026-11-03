@@ -2,9 +2,9 @@
 
 Living draft. This file records current understanding of the OpenG2P Beneficiary Conversational Agent. It is not a frozen specification. Implementation and this document will move together. Where they disagree, record a decision rather than patching around it.
 
-Status: early scaffolding, pre implementation.
-Last reviewed: 2026-09-22.
-Change in: ADR-0001
+Status: working demo, MCP contract live.
+Last reviewed: 2026-10-27.
+Change in: ADR-0002
 Last updated by: Kaushalraj Puwar.
 
 ## 1. Purpose
@@ -51,20 +51,20 @@ Decided through grill, ratified in ADR.rst. Everything below it must be consiste
 | Layer | Choice | Notes |
 | --- | --- | --- |
 | Language | Python 3.12 | Already pinned by `.python-version` |
-| Harness | LangGraph | Stateful graph for handoffs, gates, bounded retries |
+| Harness | Plain async turn loop | Handoffs, gates and bounded retries implemented directly; LangGraph deferred |
 | Model clients | LangChain chat models, one fixed instance per agent | Handoff is graph edges, model calls are per node transport; no runtime model selection |
-| API | FastAPI plus Pydantic v2 | Strict JSON blob contracts, CSV export only |
+| API | FastAPI plus Pydantic v2 | One dialogue service, exposed only through MCP |
 | Beneficiary 360 | Typed client behind an interface, mock now | Real spec exists, colleague owns it; swap mock for real without touching flow |
-| Channels | Transport neutral turn connector, versioned REST JSON now | Chat scope only here; voice team integrates through the same turn contract; WebSockets later behind the same seam; no CLI as interface |
-| Sessions | Redis | Live session and history pointers |
-| Blob snapshots | SQLite file plus Redis pointer | Session keyed snapshot table with fetched at and cleanup; Postgres path kept open for deploy |
-| Authenticator | Plain deterministic function plus thin FastAPI wrapper | Callable from graph, HTTP, and tests; zero LLM calls |
-| Observability | LangSmith plus structlog JSON | OpenTelemetry, Prometheus, Grafana deferred |
+| Channels | MCP Streamable HTTP (FastMCP) | `route_turn`, `session_status`, `reset_session`, `describe_contract`; no REST surface; WebSockets later behind the same seam |
+| Sessions | In-process registry | Live session and history pointers; Redis deferred |
+| Blob snapshots | In memory on the session | Dropped with the session; SQLite and Postgres deferred |
+| Authenticator | Plain deterministic function | Callable from the tool layer and tests; zero LLM calls |
+| Observability | structlog console logs | Redaction on by default; LangSmith and OpenTelemetry deferred |
 | Packaging | uv plus ruff plus mypy | Lint, format, typed boundaries |
 | Testing now | Minimal functional tests only | Full pytest async plus httpx, respx, model stubs deferred |
 | Run now | Local machine, no containers | Docker and Kubernetes at deploy time only |
 
-Replacement rules: REST to WebSockets behind the connector seam; SQLite to Postgres behind the store seam; structlog to OpenTelemetry without touching flow code.
+Replacement rules: transport changes happen behind the MCP tool layer; SQLite to Postgres behind the store seam; structlog to OpenTelemetry without touching flow code.
 
 ## 7. System context
 
@@ -299,6 +299,20 @@ Assumed reads, to be confirmed against the real contracts:
 
 All reads for a turn feed the blob assembly step. Direct model to backend calls are out of scope.
 
+### Channel contract
+
+The voice team integrates over MCP, not HTTP. One server, `grm.mcp.server:app`, on its own port, speaking MCP Streamable HTTP at `/mcp` with JSON responses and no protocol session state. Tools:
+
+| Tool | Purpose |
+| --- | --- |
+| `route_turn` | One utterance in, one reply out. Carries `expects` so telephony knows whether to ask for an identifier, a code, or free speech. |
+| `check_connection` | Same call shape as `route_turn`, returns one fixed string. No model, no session, for URL and parsing checks. |
+| `session_status` | Verified or not, and where the call has reached. No record contents. |
+| `reset_session` | Hangup. Drops verification and snapshot together. |
+| `describe_contract` | Self-describing integration notes, so the other team never reads our source. |
+
+`DialogueService` is the single implementation of a turn. `grm/mcp/tools.py` is a thin adapter over it. There is no second channel adapter, so there is nothing for the flow to diverge against.
+
 ## 21. Storage
 
 Locked: SQLite file for per session blob snapshots plus Redis for session pointers. Postgres path kept open for deploy. Schema, migration strategy, and retention policy still to be defined.
@@ -359,7 +373,7 @@ Locked: minimal functional tests now so breakage is visible. Full layers deferre
 * Authenticator is a function or service call, never a prompt.
 * Blob assembly is a separate module with schema validation.
 * Session store is behind an interface. Swap without touching flow code.
-* Channel connector is behind an interface. REST to WebSockets swaps there.
+* The MCP tool layer is the only channel seam. A different transport swaps there without touching the service.
 * Prefer a new module over growth of a shared utility file.
 
 ## 29. Open questions

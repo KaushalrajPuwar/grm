@@ -42,3 +42,51 @@ Consequences
 * Model rebinding stays a configuration change, not a flow rewrite.
 
 New records append below as ADR 0002, ADR 0003, and so on. See logging.md.
+
+==============================
+ADR 0002: MCP as the channel contract
+==============================
+
+:Status: Accepted
+:Date: 2026-10-27
+:Author: Kaushalraj Puwar
+
+Context
+=======
+
+The voice stack is built by another team and already speaks MCP. They run on
+the same VM and need to call our dialogue service without an HTTP client, a
+bespoke schema, or knowledge of our internal routing. The REST endpoint worked
+for the web demo but made every new channel a code change on our side.
+
+Decision
+========
+
+Expose the dialogue service over MCP using FastMCP, callable at `/mcp` on a
+dedicated server (`grm.mcp.server:app`), and mount the same router on the main
+application for convenience.
+
+* Tools: `route_turn`, `check_connection`, `session_status`, `reset_session`,
+  `describe_contract`.
+* Tool arguments are scalars: the caller sends a transcript, a session id and
+  a channel. Structured internal models stay inside our service.
+* Transport is MCP Streamable HTTP with `json_response=True` and
+  `stateless_http=True`, so a deterministic client gets one JSON reply and
+  keeps no protocol session.
+* `DialogueService` holds the single implementation of a turn. The MCP tools are
+  a thin adapter over it.
+* The REST surface and its web demo wiring are removed. MCP is the only channel
+  contract; a second channel, if it ever exists, integrates through MCP.
+* `TurnResponse` gains `expects`, so a telephony client can drive prompts
+  without parsing reply text.
+
+Consequences
+============
+
+* A new channel integrates by speaking MCP, not by editing our code.
+* One service sits behind the tool layer, so there is no second implementation to diverge from.
+* The transport is stateless, so a restart loses verification for every call.
+  That is correct: a restarted process no longer holds the snapshot either.
+* Streaming and barge-in are not covered. If the voice team needs partial
+  transcripts or mid-turn ownership events, that is a new transport decision,
+  recorded separately.

@@ -25,6 +25,11 @@ class SessionRegistry:
                 self._sessions[session_id] = begin_session()
             return self._sessions[session_id]
 
+    def peek(self, session_id: str) -> AuthSession | None:
+        """Read without creating. A status check must not start a session."""
+        with self._lock:
+            return self._sessions.get(session_id)
+
     def reset(self, session_id: str) -> AuthSession:
         """Drop verification and the snapshot together, never apart."""
         with self._lock:

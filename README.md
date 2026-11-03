@@ -93,15 +93,15 @@ Locked 2026-09-22. Full rationale lives in [ARCHITECTURE.md](ARCHITECTURE.md) an
 | Layer | Choice |
 | --- | --- |
 | Language | Python 3.12 |
-| Harness | LangGraph |
+| Harness | Plain async turn loop (LangGraph deferred) |
 | Model clients | LangChain chat models, one fixed instance per agent |
-| API | FastAPI plus Pydantic v2, strict JSON blob contracts |
+| API | FastAPI plus Pydantic v2, one dialogue service behind the MCP tool layer |
 | Beneficiary 360 | Typed client behind an interface, mock now, real client later |
-| Channels | Transport neutral turn connector, versioned REST JSON, WebSockets later |
-| Sessions | Redis |
-| Blob snapshots | SQLite file plus Redis pointer, Postgres path open |
-| Authenticator | Plain deterministic function plus thin FastAPI wrapper |
-| Observability | LangSmith plus structlog JSON |
+| Channels | MCP Streamable HTTP (FastMCP), MCP only |
+| Sessions | In-process registry, single process (Redis deferred) |
+| Blob snapshots | Held in memory on the session, dropped on reset (SQLite deferred) |
+| Authenticator | Plain deterministic function, callable from the tool layer and tests |
+| Observability | structlog console logs with redaction |
 | Packaging | uv plus ruff plus mypy |
 | Run | Local machine, containers at deploy time only |
 
@@ -168,6 +168,36 @@ cp .env.example .env
 
 Fill in `.env` before running anything that talks to a model or a backend.
 
+## Running the service
+
+One contract: MCP. The voice stack is the only client.
+
+```bash
+uvicorn grm.mcp.server:app --host 0.0.0.0 --port 8100
+```
+
+MCP lives at `POST /mcp`, Streamable HTTP, JSON responses, stateless. Discover the tools with:
+
+```bash
+curl -s -X POST http://127.0.0.1:8100/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+| Tool | Purpose |
+| --- | --- |
+| `route_turn` | One utterance in, one reply out, with `expects` telling the channel what to ask next |
+| `check_connection` | Fixed connectivity string, same call shape, no model and no session |
+| `session_status` | Whether the call is verified and where it has reached |
+| `reset_session` | Hangup: drop verification and the snapshot together |
+| `describe_contract` | Integration notes, in the protocol, so the voice team never reads our source |
+
+Verify the contract end to end while the MCP server is running:
+
+```bash
+python scripts/mcp_smoke.py --base http://127.0.0.1:8100
+```
+
 ## Configuration
 
 | Variable | Purpose |
@@ -176,7 +206,8 @@ Fill in `.env` before running anything that talks to a model or a backend.
 | `BASE_URL` | Endpoint base for model access |
 | `MODELID_1` | Model bound to one agent role |
 | `MODELID_2` | Model bound to one agent role |
-| `MODELID_3` | Model bound to one agent role |
+| `MODELID_3` | Model bound to the QA role (unused while QA is disabled) |
+| `QA_ENABLED` | `false` ships the reasoning answer directly; `true` re-enables the QA gate |
 
 Model identifiers are configuration, not architecture. Bind them at the adapter boundary so a role can change model without a rewrite of flow control.
 

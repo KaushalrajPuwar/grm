@@ -21,6 +21,7 @@ from grm.agents.base import AgentAdapter, get_adapters
 from grm.auth.gate import AuthSession, release_blob
 from grm.beneficiary360.client import Beneficiary360Client
 from grm.beneficiary360.schemas import Beneficiary360Blob
+from grm.config import get_settings
 from grm.harness.gate_flow import handle_gate_message
 from grm.harness.routing import (
     HANDOFF_INTENT,
@@ -283,6 +284,17 @@ async def _handle_authenticated_turn(
     log.info("handed to reasoning", stage="handoff", owner="reasoning")
 
     candidate = await run_reasoning(adapters["reasoning"], state, context)
+
+    if not get_settings().qa_enabled:
+        # QA is switched off for this deployment. The candidate ships directly.
+        # The gate, the revision loop and the prompt all stay in place; setting
+        # QA_ENABLED=true turns them back on with no code change.
+        log.info("evaluation skipped", stage="qa", reason="QA_ENABLED is false")
+        state.reply = candidate
+        state.stage = "reasoned"
+        state.record("reasoning", candidate)
+        return state
+
     objection: str | None = None
     verdict = "pass"
 
