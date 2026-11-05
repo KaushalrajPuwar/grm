@@ -136,20 +136,30 @@ def main() -> int:
     step("send the beneficiary identifier")
     identified = client.call("route_turn", session_id=session, text=BENEFICIARY_ID, channel="voice")
     say("agent", identified["reply"])
-    check("identifier alone does not authenticate", identified["authenticated"] is False)
-    check("channel is told to ask for the code", identified["expects"] == "otp")
-    check("pending_otp is set", identified["pending_otp"] is True)
 
-    step("submit the demo code (read from the shared store)")
-    code = read_otp()
-    if not code:
-        print("    FAIL  no code found. Is the server running from the repo root?")
-        print(f"    looked in: {OTP_FILE}")
-        return 1
-    print(f"    read code: {'*' * max(0, len(code) - 2) + code[-2:]}")
-    verified = client.call("route_turn", session_id=session, text=code, channel="voice")
-    say("agent", verified["reply"])
-    check("code authenticates", verified["authenticated"] is True)
+    if identified["authenticated"]:
+        check("channel goes straight to free speech", identified["expects"] == "message")
+        check("no OTP is pending", identified["pending_otp"] is False)
+    else:
+        check("identifier alone does not authenticate", identified["authenticated"] is False)
+        check("channel is told to ask for the code", identified["expects"] == "otp")
+        check("pending_otp is set", identified["pending_otp"] is True)
+
+    if identified["authenticated"]:
+        print("    OTP bypass active: the identifier authenticated directly")
+        verified = identified
+        check("identifier auto-verifies in demo mode", verified["authenticated"] is True)
+    else:
+        step("submit the demo code (read from the shared store)")
+        code = read_otp()
+        if not code:
+            print("    FAIL  no code found. Is the server running from the repo root?")
+            print(f"    looked in: {OTP_FILE}")
+            return 1
+        print(f"    read code: {'*' * max(0, len(code) - 2) + code[-2:]}")
+        verified = client.call("route_turn", session_id=session, text=code, channel="voice")
+        say("agent", verified["reply"])
+        check("code authenticates", verified["authenticated"] is True)
     check("greeting names the beneficiary", "Lakshmi" in verified["reply"])
     check("channel is told to allow free speech", verified["expects"] == "message")
 

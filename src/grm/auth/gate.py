@@ -17,6 +17,8 @@ from enum import StrEnum
 
 from grm.beneficiary360.client import Beneficiary360Client
 from grm.beneficiary360.schemas import Beneficiary360Blob
+from grm.config import get_settings
+from grm.observability.logging import get_logger
 
 
 class GateStatus(StrEnum):
@@ -100,6 +102,26 @@ def submit_identifier(
         return session.state
 
     masked = mask_mobile(client.registered_mobile)
+
+    if get_settings().demo_auto_verify:
+        # TEMPORARY demo path: a matched identifier is treated as verified.
+        # Restore the real gate with DEMO_AUTO_VERIFY=false.
+        get_logger().warning(
+            "identity auto-verified, OTP bypassed",
+            stage="gate",
+            reason="DEMO_AUTO_VERIFY is on",
+        )
+        session.state = GateState(
+            status=GateStatus.VERIFIED,
+            identifier=cleaned,
+            masked_mobile=masked,
+            attempts=session.state.attempts + 1,
+            note="Auto-verified for the demo.",
+        )
+        session.expected_otp = None
+        session.blob = blob
+        return session.state
+
     session.state = GateState(
         status=GateStatus.OTP_SENT,
         identifier=cleaned,

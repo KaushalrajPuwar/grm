@@ -58,6 +58,9 @@ def _handle_identifier(
     # publishes a live code to the issuer process.
     state = submit_identifier(session, cleaned, client, issue_otp)
 
+    if state.status is GateStatus.VERIFIED:
+        return "", "verified"
+
     if state.status is GateStatus.OTP_SENT:
         return OTP_PROMPT.format(masked=state.masked_mobile), "otp_sent"
 

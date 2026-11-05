@@ -214,6 +214,7 @@ python scripts/mcp_walkthrough.py --base http://127.0.0.1:8100
 | `MODELID_2` | Model bound to one agent role |
 | `MODELID_3` | Model bound to the QA role (unused while QA is disabled) |
 | `QA_ENABLED` | `false` ships the reasoning answer directly; `true` re-enables the QA gate |
+| `DEMO_AUTO_VERIFY` | `true` skips the OTP for a matched identifier. Temporary demo bypass; set `false` and restart to restore the gate |
 
 Model identifiers are configuration, not architecture. Bind them at the adapter boundary so a role can change model without a rewrite of flow control.
 

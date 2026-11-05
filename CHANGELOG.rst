@@ -18,6 +18,9 @@ Version 0.2.0 (2026-11-03)
 - Demo record dates moved to October 2026 so "this month" is backed by data.
 - .env is now authoritative for local runs, so a stale API_KEY exported in the
   shell cannot shadow a renewed one.
+- Add DEMO_AUTO_VERIFY, a temporary switch that auto-verifies a matched
+  identifier without an OTP. Set false and restart to restore the gate.
+- Reasoning now states the amount held whenever money is blocked or unreleased.
 
 Version 0.1.0 (2026-09-22) [Unreleased]
 --------------------------

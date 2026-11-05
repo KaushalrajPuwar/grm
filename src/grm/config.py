@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     #: one environment change and a restart.
     qa_enabled: bool = False
 
+    #: TEMPORARY demo switch. True verifies a matched identifier without an OTP,
+    #: so the voice team can test before SMS delivery exists. Set
+    #: DEMO_AUTO_VERIFY=false and restart to restore the real gate. The OTP code
+    #: path is untouched and resumes the moment this is off.
+    demo_auto_verify: bool = True
+
     @property
     def chat_model(self) -> str:
         """MODELID_1. Fixed to the chat agent."""

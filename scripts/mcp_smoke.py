@@ -156,17 +156,25 @@ def main() -> int:
     check("unknown identifier reveals nothing", unknown["authenticated"] is False)
     check("unknown identifier issues no code", not published_otp())
 
+    auto_verify = str(contract.get("identity_check", "")).startswith("auto")
     identified = client.call(
         "route_turn", session_id=session, text="FID-9988776655", channel="voice"
     )
-    code = published_otp()
-    check("code published for the issuer terminal", bool(code))
-    check("channel is told to ask for the code", identified["expects"] == "otp")
-    check("pending_otp flag set", identified["pending_otp"] is True)
-    check("identifier alone does not authenticate", identified["authenticated"] is False)
 
-    verified = client.call("route_turn", session_id=session, text=code, channel="voice")
-    check("code authenticates over MCP", verified["authenticated"] is True)
+    if auto_verify:
+        check("identifier auto-verifies in demo mode", identified["authenticated"] is True)
+        check("channel goes straight to free speech", identified["expects"] == "message")
+        check("no OTP is pending in demo mode", identified["pending_otp"] is False)
+        verified = identified
+    else:
+        code = published_otp()
+        check("code published for the issuer terminal", bool(code))
+        check("channel is told to ask for the code", identified["expects"] == "otp")
+        check("pending_otp flag set", identified["pending_otp"] is True)
+        check("identifier alone does not authenticate", identified["authenticated"] is False)
+        verified = client.call("route_turn", session_id=session, text=code, channel="voice")
+        check("code authenticates over MCP", verified["authenticated"] is True)
+
     check("greeting opens from the record", "Lakshmi" in verified["reply"])
     check("channel is told to allow free speech", verified["expects"] == "message")
     check(

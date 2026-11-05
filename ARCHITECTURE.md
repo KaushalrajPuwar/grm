@@ -184,6 +184,11 @@ Rules:
 
 Exact identifier type and verification flow are undecided and depend on backend contracts.
 
+Temporary demo switch: `DEMO_AUTO_VERIFY=true` treats a matched identifier as
+verified without an OTP, so the voice team can test before SMS delivery exists.
+The OTP path is untouched and resumes when the flag is false. This must be off
+before any real beneficiary data is connected.
+
 ## 15. Data blob contract
 
 Intent: a single turn scoped, authenticated snapshot that the reasoning agent can analyse without further backend roaming.

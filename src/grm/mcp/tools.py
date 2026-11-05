@@ -148,8 +148,9 @@ async def describe_contract() -> dict[str, Any]:
     and what each expects value means.
     """
     return {
-        "contract_version": "1.2",
+        "contract_version": "1.3",
         "evaluation": "enabled" if get_settings().qa_enabled else "disabled",
+        "identity_check": "auto (demo bypass)" if get_settings().demo_auto_verify else "otp",
         "transport": "MCP Streamable HTTP (FastMCP), JSON responses, stateless",
         "tools": [
             "route_turn",

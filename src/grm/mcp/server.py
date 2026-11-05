@@ -22,9 +22,10 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastmcp.server.http import StarletteWithLifespan
 
+from grm.config import get_settings
 from grm.mcp.constants import MCP_PREFIX, SERVER_NAME, SERVER_VERSION
 from grm.mcp.tools import mcp
-from grm.observability.logging import configure_logging
+from grm.observability.logging import configure_logging, get_logger
 
 
 def build_mcp_asgi() -> StarletteWithLifespan:
@@ -40,6 +41,11 @@ def build_mcp_asgi() -> StarletteWithLifespan:
 def create_mcp_app() -> FastAPI:
     """Standalone MCP application for the voice team's port."""
     configure_logging()
+    if get_settings().demo_auto_verify:
+        get_logger().warning(
+            "DEMO_AUTO_VERIFY is on: identity verification bypassed",
+            stage="startup",
+        )
     transport = build_mcp_asgi()
     app = FastAPI(
         title="GRM MCP",
