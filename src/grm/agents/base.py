@@ -86,28 +86,35 @@ class AgentAdapter:
     ) -> list[BaseMessage]:
         """Assemble the message list for one call.
 
-        History is included so pronouns and follow-ups resolve. Without it a
-        question like "what should I do about it" has no referent.
+        Prior turns go into the system prompt as a plain transcript rather than
+        as synthetic assistant messages. Two reasons:
+
+        * Reasoning models reject an assistant turn that has no reasoning
+          content, which is what a synthetic AIMessage looks like to them.
+          Some providers return 400 rather than tolerating it.
+        * The previous version also skipped every user turn, so follow-ups had
+          the assistant's answer without the question that produced it.
+
+        A transcript is model agnostic and carries both sides.
         """
         system = self.constitution
         if context:
             system = f"{system}\n\n---\n\n## Authenticated session data\n\n{context}"
-        messages: list[BaseMessage] = [SystemMessage(content=system)]
 
-        for entry in (history or [])[-8:]:
-            speaker = entry.get("role")
+        transcript = []
+        for entry in (history or [])[-10:]:
             text = entry.get("text", "")
-            if not text or speaker == "user":
+            if not text:
                 continue
-            label = (
-                "Beneficiary"
-                if speaker == "user"
-                else ("Assistant" if speaker in {"chat", "assistant"} else "Analysis")
-            )
-            messages.append(AIMessage(content=f"{label}: {text}"))
+            speaker = "Beneficiary" if entry.get("role") == "user" else "Assistant"
+            transcript.append(f"{speaker}: {text}")
 
-        messages.append(HumanMessage(content=user_text))
-        return messages
+        if transcript:
+            system = f"{system}\n\n---\n\n## Earlier in this conversation\n\n" + "\n".join(
+                transcript
+            )
+
+        return [SystemMessage(content=system), HumanMessage(content=user_text)]
 
     async def invoke(
         self,
