@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     #: one environment change and a restart.
     qa_enabled: bool = False
 
+    #: One switch for the agent architecture. False keeps the two-agent flow:
+    #: chat routes, reasoning analyses. True collapses both responsibilities
+    #: into the chat model, which then sees the full snapshot and the merged
+    #: constitution. Every existing path stays intact for rollback.
+    single_agent: bool = False
+
     #: TEMPORARY demo switch. True verifies a matched identifier without an OTP,
     #: so the voice team can test before SMS delivery exists. Set
     #: DEMO_AUTO_VERIFY=false and restart to restore the real gate. The OTP code

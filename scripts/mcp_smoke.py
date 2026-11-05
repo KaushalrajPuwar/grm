@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ISSUED_OTP = Path("var/demo_otp_issued.json")
+FRIENDLY_ERROR = (
+    "I'm sorry, I'm having trouble connecting to our service right now. "
+    "Please try again in a little while."
+)
 failures: list[str] = []
 
 
@@ -140,6 +144,13 @@ def main() -> int:
     check("contract explains expects", "otp" in contract["expects"])
     check("contract reports evaluation state", contract["evaluation"] in {"enabled", "disabled"})
     check("contract declares FastMCP transport", "FastMCP" in contract["transport"])
+    single = contract.get("architecture") == "single_agent"
+    lookup_owner = "single" if single else "chat"
+    analysis_owner = "single" if single else "reasoning"
+    check(
+        "contract reports an architecture",
+        contract.get("architecture") in {"single_agent", "chat_plus_reasoning"},
+    )
 
     banner("Gate over MCP")
     session = f"voice-{uuid.uuid4().hex[:8]}"
@@ -184,12 +195,12 @@ def main() -> int:
 
     banner("Route A over MCP: delivery already moving")
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
-    check("reference lookup stays with the chat agent", lookup["owner"] == "chat")
+    check("reference lookup is answered by the expected agent", lookup["owner"] == lookup_owner)
 
     moving = client.call(
         "route_turn", session_id=session, text="when will my cylinder arrive?", channel="voice"
     )
-    check("delivery question hands to reasoning", moving["owner"] == "reasoning")
+    check("delivery question is answered by the expected agent", moving["owner"] == analysis_owner)
     check("evaluation is disabled by configuration", moving["qa_verdict"] is None)
     # The agent may render 2026-10-24 or 24 October 2026; both are correct.
     check(
@@ -197,16 +208,17 @@ def main() -> int:
         bool(re.search(r"2026-10-24|24 october|october 24", moving["reply"], re.IGNORECASE)),
         moving["reply"][:160],
     )
-    check(
-        "handoff is reported to the channel",
-        any(h["kind"] == "to_reasoning" for h in moving["handoffs"]),
-    )
+    if not single:
+        check(
+            "handoff is reported to the channel",
+            any(h["kind"] == "to_reasoning" for h in moving["handoffs"]),
+        )
 
     banner("Route B over MCP: blocked, with a way out")
     blocked = client.call(
         "route_turn", session_id=session, text="why was my gas subsidy blocked this month?"
     )
-    check("blocked question hands to reasoning", blocked["owner"] == "reasoning")
+    check("blocked question is answered by the expected agent", blocked["owner"] == analysis_owner)
     check("answer names the cause", "aadhaar" in blocked["reply"].lower())
     check("answer names the amount", "300" in blocked["reply"])
     # Phrasing varies; grievance, ticket and complaint all name the same route.
@@ -238,8 +250,15 @@ def main() -> int:
     try:
         client.call("route_turn", session_id=session, text="hi", channel="carrier-pigeon")
         check("unknown channel rejected", False)
-    except (RuntimeError, urllib.error.HTTPError):
+    except (RuntimeError, urllib.error.HTTPError) as exc:
         check("unknown channel rejected", True)
+        text = str(exc).strip()
+        check("error text is the fixed sentence", text == FRIENDLY_ERROR, text[:120])
+        check(
+            "raw error detail is not leaked",
+            "unknown channel" not in text and "Error calling tool" not in text,
+            text[:120],
+        )
 
     print()
     if failures:

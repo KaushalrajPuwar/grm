@@ -35,6 +35,7 @@ def load_constitution(role: str) -> str:
         "chat": "chat_agent.md",
         "reasoning": "reasoning_agent.md",
         "qa": "qa_agent.md",
+        "single": "single_agent.md",
     }[role]
     path = PROMPT_DIR / filename
     if not path.exists():  # pragma: no cover - packaging error
@@ -168,4 +169,7 @@ def get_adapters() -> dict[str, AgentAdapter]:
         "chat": AgentAdapter(role="chat", model_id=settings.chat_model),
         "reasoning": AgentAdapter(role="reasoning", model_id=settings.reasoning_model),
         "qa": AgentAdapter(role="qa", model_id=settings.qa_model),
+        # Single-agent mode reuses MODELID_1, the model that already carries the
+        # front line, so enabling the flag does not require a new binding.
+        "single": AgentAdapter(role="single", model_id=settings.chat_model),
     }

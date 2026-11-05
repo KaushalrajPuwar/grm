@@ -90,3 +90,44 @@ Consequences
 * Streaming and barge-in are not covered. If the voice team needs partial
   transcripts or mid-turn ownership events, that is a new transport decision,
   recorded separately.
+
+==============================
+ADR 0003: Single-agent mode behind a flag
+==============================
+
+:Status: Accepted
+:Date: 2026-11-05
+:Author: Kaushalraj Puwar
+
+Context
+=======
+
+Every authenticated turn paid for two sequential model calls. The chat model
+wrote a full beneficiary-facing reply before deciding to hand off, and that
+reply was discarded. Measured turns were roughly twice the latency of the
+analysis call alone, and the discarded generation was pure cost.
+
+Decision
+========
+
+Add `SINGLE_AGENT`, default false. When true:
+
+* One agent, bound to `MODELID_1`, handles every authenticated turn.
+* It receives the full snapshot and `prompts/single_agent.md`, which merges
+  reception, lookup, analysis, presentation and the satisfaction question.
+* No route line is produced or parsed.
+* The chat and reasoning modules, prompts and bindings remain, so the flag is
+  the rollback.
+
+The QA switch is independent and stays off by default.
+
+Consequences
+============
+
+* A data question drops from two model calls to one.
+* Every turn sends the full snapshot, roughly four times the input tokens of
+  the old chat call. Cost per lookup rises even as latency falls.
+* The information boundary between front line and analyst disappears. One
+  model now sees everything, so answer quality depends on one prompt.
+* If `MODELID_1` is a slow reasoning model, simple lookups may not get faster.
+  Benchmark both modes before making this the default.

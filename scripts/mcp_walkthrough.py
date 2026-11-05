@@ -118,6 +118,12 @@ def main() -> int:
     print("MCP walkthrough")
     print(f"server: {args.base}   session: {session}")
 
+    contract = client.call("describe_contract")
+    single = contract.get("architecture") == "single_agent"
+    lookup_owner = "single" if single else "chat"
+    analysis_owner = "single" if single else "reasoning"
+    print(f"architecture: {contract.get('architecture')}   qa: {contract.get('evaluation')}")
+
     # A stale code from an earlier run must not be mistaken for this one.
     OTP_FILE.unlink(missing_ok=True)
 
@@ -163,13 +169,13 @@ def main() -> int:
     check("greeting names the beneficiary", "Lakshmi" in verified["reply"])
     check("channel is told to allow free speech", verified["expects"] == "message")
 
-    step("ask a reference question (front line answers)")
+    step("ask a reference question")
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
     say(f"agent({lookup['owner']})", lookup["reply"])
-    check("stays with the chat agent", lookup["owner"] == "chat")
+    check(f"answered by {lookup_owner}", lookup["owner"] == lookup_owner)
     check("answers with the connection number", "TG-4471-9920" in lookup["reply"])
 
-    step("ask why the cylinder has not arrived (hand off to reasoning)")
+    step("ask when the cylinder will arrive")
     delivery = client.call(
         "route_turn",
         session_id=session,
@@ -177,7 +183,7 @@ def main() -> int:
         channel="voice",
     )
     say(f"agent({delivery['owner']})", delivery["reply"])
-    check("hands off to the reasoning agent", delivery["owner"] == "reasoning")
+    check(f"answered by {analysis_owner}", delivery["owner"] == analysis_owner)
     check(
         "states the expected delivery date",
         bool(re.search(r"2026-10-24|24 october|october 24", delivery["reply"], re.IGNORECASE)),
@@ -192,7 +198,7 @@ def main() -> int:
         channel="voice",
     )
     say(f"agent({blocked['owner']})", blocked["reply"])
-    check("hands off to the reasoning agent", blocked["owner"] == "reasoning")
+    check(f"answered by {analysis_owner}", blocked["owner"] == analysis_owner)
     check("names the Aadhaar mismatch", "aadhaar" in blocked["reply"].lower())
     check("names the amount held", "300" in blocked["reply"])
     check(

@@ -64,6 +64,31 @@ async def run_reasoning(
     return (message.content if isinstance(message.content, str) else str(message.content)).strip()
 
 
+async def run_single(
+    adapter: AgentAdapter, state: TurnState, context: str, objection: str | None = None
+) -> str:
+    """Single agent turn. Reception, lookup and analysis in one call.
+
+    No route line is produced or parsed: this role owns every authenticated
+    turn. The objection path exists so the QA gate can still ask for a
+    correction when it is enabled.
+    """
+    text = state.user_text
+    if objection:
+        text = (
+            f"{text}\n\nYour previous answer was rejected on evaluation. The "
+            f"objections were:\n{objection}\n\nCorrect the defect. Do not hedge "
+            "language over a claim that is still there."
+        )
+    history = [
+        e
+        for e in state.history
+        if not (e.get("role") == "user" and e.get("text") == state.user_text)
+    ]
+    message = await adapter.invoke(text, context, history)
+    return (message.content if isinstance(message.content, str) else str(message.content)).strip()
+
+
 QA_RE = re.compile(r"VERDICT:\s*(pass|fail)", re.IGNORECASE)
 
 

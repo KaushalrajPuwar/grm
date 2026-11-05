@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-Owner = Literal["chat", "reasoning", "qa", "none"]
+Owner = Literal["chat", "reasoning", "single", "qa", "none"]
 
 #: Handoff events surfaced to the front end's agent panel.
 HandoffKind = Literal["to_reasoning", "to_chat", "gate_open", "gate_close", "qa_pass", "qa_fail"]

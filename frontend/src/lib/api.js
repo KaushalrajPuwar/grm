@@ -16,6 +16,7 @@ export const ROLE_LABEL = {
   none: 'Waiting',
   chat: 'Chat agent',
   reasoning: 'Reasoning agent',
+  single: 'Single agent',
   qa: 'QA agent',
 }
 

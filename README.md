@@ -86,6 +86,14 @@ The data blob is the reasoning substrate. The reasoning agent analyses pre-fetch
 - **Scheme eligibility and recommendation** — profile matched to scheme rules; unsupported inference is rejected.
 - **General grievance redressal** — complaint capture, status, next step; grievance context is held until the user is satisfied or the session closes.
 
+## Agent modes
+
+Two modes, one flag. `SINGLE_AGENT=false` is the default and keeps the two-agent flow: a chat model reads the enrollment picture and either answers or hands to the reasoning agent, which sees the full record.
+
+`SINGLE_AGENT=true` gives every authenticated turn to one agent, bound to `MODELID_1`, with the full snapshot and `prompts/single_agent.md`. There is no routing call, no discarded draft, and no handoff. The two-agent code path stays intact, so flipping the flag back restores it.
+
+Both modes share the same gate, session, QA switch, tools and response contract.
+
 ## Tech stack
 
 Locked 2026-09-22. Full rationale lives in [ARCHITECTURE.md](ARCHITECTURE.md) and [ADR.rst](ADR.rst).
@@ -93,7 +101,7 @@ Locked 2026-09-22. Full rationale lives in [ARCHITECTURE.md](ARCHITECTURE.md) an
 | Layer | Choice |
 | --- | --- |
 | Language | Python 3.12 |
-| Harness | Plain async turn loop (LangGraph deferred) |
+| Harness | Plain async turn loop, two-agent or single-agent behind a flag |
 | Model clients | LangChain chat models, one fixed instance per agent |
 | API | FastAPI plus Pydantic v2, one dialogue service behind the MCP tool layer |
 | Beneficiary 360 | Typed client behind an interface, mock now, real client later |
@@ -215,6 +223,7 @@ python scripts/mcp_walkthrough.py --base http://127.0.0.1:8100
 | `MODELID_3` | Model bound to the QA role (unused while QA is disabled) |
 | `QA_ENABLED` | `false` ships the reasoning answer directly; `true` re-enables the QA gate |
 | `DEMO_AUTO_VERIFY` | `true` skips the OTP for a matched identifier. Temporary demo bypass; set `false` and restart to restore the gate |
+| `SINGLE_AGENT` | `false` keeps chat routing plus reasoning. `true` gives every turn to one agent using the full snapshot and `single_agent.md` |
 
 Model identifiers are configuration, not architecture. Bind them at the adapter boundary so a role can change model without a rewrite of flow control.
 

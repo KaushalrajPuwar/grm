@@ -5,6 +5,18 @@ GRM Changelog
 
 This file tracks changes and releases for the OpenG2P Beneficiary Conversational Agent project. Decisions live in ADR.rst.
 
+Version 0.3.0 (2026-11-05)
+--------------------------
+- Add SINGLE_AGENT, default false. When true, MODELID_1 handles every turn with
+  the full snapshot and prompts/single_agent.md, removing the routing call and
+  the discarded draft. The two-agent path remains for rollback.
+- Add architecture to describe_contract and report owner single in this mode.
+- Keep QA independent and disabled by default.
+- Flatten conversation history into the system prompt so reasoning models no
+  longer reject synthetic assistant turns without reasoning content.
+- Tool failures now return one fixed, beneficiary-safe sentence with isError
+  true. The real exception and provider detail stay in our logs.
+
 Version 0.2.0 (2026-11-03)
 --------------------------
 - MCP is the only channel contract. The REST adapter and its web demo wiring

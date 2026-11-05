@@ -16,20 +16,42 @@ Design rules:
   changes, not the names, so an integrated client does not break.
 """
 
-from typing import Any
+from typing import Any, NoReturn
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 
 from grm.channels.schemas import Channel, TurnRequest
 from grm.channels.service import get_service
 from grm.config import get_settings
 from grm.mcp.constants import INSTRUCTIONS, SERVER_NAME, SERVER_VERSION
+from grm.observability.logging import get_logger
 
 mcp: FastMCP = FastMCP(
     name=SERVER_NAME,
     version=SERVER_VERSION,
     instructions=INSTRUCTIONS,
 )
+
+#: One fixed sentence for every tool failure. The detail belongs in our logs,
+#: not in a reply that may be read aloud to a beneficiary.
+FRIENDLY_ERROR = (
+    "I'm sorry, I'm having trouble connecting to our service right now. "
+    "Please try again in a little while."
+)
+
+
+def _fail(tool: str, exc: Exception) -> NoReturn:
+    """Log the real cause, return a fixed sentence to the caller."""
+    get_logger().error(
+        "tool failed",
+        stage="tool",
+        tool=tool,
+        error=type(exc).__name__,
+        detail=str(exc)[:800],
+    )
+    raise ToolError(FRIENDLY_ERROR) from exc
+
 
 #: Channel aliases, so a client can send its own vocabulary without a code change.
 _CHANNEL_ALIASES: dict[str, Channel] = {
@@ -54,9 +76,9 @@ def _resolve_channel(value: str) -> Channel:
     name="route_turn",
     description=(
         "Send one beneficiary utterance and receive the reply. Main entry "
-        "point: handles identity verification, routing between the chat and "
-        "reasoning agents, quality checking, and the reply. Call once per "
-        "utterance, with a stable session_id for the whole call."
+        "point: handles identity verification, answering from the authenticated "
+        "record, quality checking, and the reply. Call once per utterance, with "
+        "a stable session_id for the whole call."
     ),
 )
 async def route_turn(session_id: str, text: str, channel: str = "voice") -> dict[str, Any]:
@@ -73,11 +95,14 @@ async def route_turn(session_id: str, text: str, channel: str = "voice") -> dict
         reply, owner, stage, authenticated, handoffs, qa_verdict,
         revision_rounds, pending_otp, expects.
     """
-    resolved = _resolve_channel(channel)
-    response = await get_service().turn(
-        TurnRequest(session_id=session_id, text=text or "", channel=resolved)
-    )
-    return response.model_dump(mode="json")
+    try:
+        resolved = _resolve_channel(channel)
+        response = await get_service().turn(
+            TurnRequest(session_id=session_id, text=text or "", channel=resolved)
+        )
+        return response.model_dump(mode="json")
+    except Exception as exc:
+        _fail("route_turn", exc)
 
 
 @mcp.tool(
@@ -94,7 +119,10 @@ async def session_status(session_id: str) -> dict[str, Any]:
     Args:
         session_id: The identifier used for route_turn.
     """
-    return get_service().status(session_id)
+    try:
+        return get_service().status(session_id)
+    except Exception as exc:
+        _fail("session_status", exc)
 
 
 @mcp.tool(
@@ -110,8 +138,11 @@ async def reset_session(session_id: str) -> dict[str, Any]:
     Args:
         session_id: The identifier used for route_turn.
     """
-    get_service().reset(session_id)
-    return {"session_id": session_id, "reset": True}
+    try:
+        get_service().reset(session_id)
+        return {"session_id": session_id, "reset": True}
+    except Exception as exc:
+        _fail("reset_session", exc)
 
 
 @mcp.tool(
@@ -148,7 +179,8 @@ async def describe_contract() -> dict[str, Any]:
     and what each expects value means.
     """
     return {
-        "contract_version": "1.3",
+        "contract_version": "1.4",
+        "architecture": "single_agent" if get_settings().single_agent else "chat_plus_reasoning",
         "evaluation": "enabled" if get_settings().qa_enabled else "disabled",
         "identity_check": "auto (demo bypass)" if get_settings().demo_auto_verify else "otp",
         "transport": "MCP Streamable HTTP (FastMCP), JSON responses, stateless",
@@ -163,6 +195,9 @@ async def describe_contract() -> dict[str, Any]:
         "agents": {
             "chat": "front line: greetings, clarification, lookups, presentation",
             "reasoning": "analysis across records: status, blockers, next steps",
+            "single": (
+                "one agent doing reception, lookups and analysis; active when SINGLE_AGENT is true"
+            ),
             "qa": "internal verification only; never speaks to the beneficiary",
             "none": "no agent has claimed the turn yet",
         },
@@ -171,7 +206,7 @@ async def describe_contract() -> dict[str, Any]:
             "id_prompt": "waiting for a beneficiary identifier",
             "otp_sent": "waiting for the one-time code",
             "open": "verified, ready for a normal question",
-            "reasoned": "the previous turn was answered by the reasoning agent",
+            "reasoned": "the previous turn was answered from the record",
         },
         "expects": {
             "beneficiary_id": "ask for the identifier; send it back as text",
@@ -181,6 +216,7 @@ async def describe_contract() -> dict[str, Any]:
         },
         "notes": [
             "Reuse session_id for the whole call, reset_session on hangup.",
+            "Tool failures return isError true with one fixed sentence; details stay in our logs.",
             "A turn can take several seconds: three model calls may run in sequence.",
             "Never treat a reply as final until authenticated is true.",
         ],

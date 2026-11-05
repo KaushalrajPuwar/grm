@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from grm.agents.base import AgentAdapter, get_adapters
@@ -30,8 +31,9 @@ from grm.harness.routing import (
     run_chat,
     run_qa,
     run_reasoning,
+    run_single,
 )
-from grm.harness.state import Handoff, TurnState
+from grm.harness.state import Handoff, Owner, TurnState
 from grm.observability.logging import get_logger
 
 WELCOME = (
@@ -276,8 +278,32 @@ async def _handle_authenticated_turn(
     state.record("user", state.user_text)
     log = get_logger()
 
-    # Front line sees enrolment only. Status, blockers, and orders stay behind
-    # the reasoning boundary.
+    if get_settings().single_agent:
+        # One agent owns the turn: reception, lookup and analysis in one call.
+        # It sees the full snapshot, so there is no routing decision and no
+        # discarded draft.
+        log.info("single agent handling turn", stage="agent", model_role="single")
+        candidate = await run_single(adapters["single"], state, context)
+        candidate, verdict = await _evaluate(
+            adapters,
+            state,
+            context,
+            candidate,
+            target="single",
+            revise=lambda objection: run_single(adapters["single"], state, context, objection),
+        )
+        if verdict != "pass":
+            return _fail_closed(state, "single")
+
+        state.owner = "single"
+        state.stage = "reasoned"
+        state.reply = candidate
+        state.record("single", candidate)
+        return state
+
+    # Two-agent flow: the front line routes, the reasoning agent analyses.
+    # The front line sees enrolment only; status, blockers, and orders stay
+    # behind the reasoning boundary.
     log.info("asking front line to route this turn", stage="routing")
     reply, route = await run_chat(adapters["chat"], state, _light_context(blob))
     state.record("chat", reply)
@@ -289,20 +315,44 @@ async def _handle_authenticated_turn(
         return state
 
     register_handoff(state, "reasoning", HANDOFF_INTENT)
-    state.owner = "reasoning"
     log.info("handed to reasoning", stage="handoff", owner="reasoning")
 
     candidate = await run_reasoning(adapters["reasoning"], state, context)
+    candidate, verdict = await _evaluate(
+        adapters,
+        state,
+        context,
+        candidate,
+        target="reasoning",
+        revise=lambda objection: run_reasoning(adapters["reasoning"], state, context, objection),
+    )
+    if verdict != "pass":
+        return _fail_closed(state, "chat")
 
+    state.owner = "reasoning"
+    state.stage = "reasoned"
+    state.reply = candidate
+    state.record("reasoning", candidate)
+    return state
+
+
+async def _evaluate(
+    adapters: dict[str, AgentAdapter],
+    state: TurnState,
+    context: str,
+    candidate: str,
+    target: Owner,
+    revise: Callable[[str], Awaitable[str]],
+) -> tuple[str, str]:
+    """Run the QA gate over a candidate. Returns the possibly revised answer.
+
+    When QA is disabled this is a pass-through. When enabled, a failure is sent
+    back to the agent that produced the candidate, not to a different role.
+    """
+    log = get_logger()
     if not get_settings().qa_enabled:
-        # QA is switched off for this deployment. The candidate ships directly.
-        # The gate, the revision loop and the prompt all stay in place; setting
-        # QA_ENABLED=true turns them back on with no code change.
         log.info("evaluation skipped", stage="qa", reason="QA_ENABLED is false")
-        state.reply = candidate
-        state.stage = "reasoned"
-        state.record("reasoning", candidate)
-        return state
+        return candidate, "pass"
 
     objection: str | None = None
     verdict = "pass"
@@ -322,35 +372,30 @@ async def _handle_authenticated_turn(
             reason=_first_line(objection),
         )
         state.handoffs.append(
-            Handoff(frm="qa", to="reasoning", kind="qa_fail", reason=_first_line(objection))
+            Handoff(frm="qa", to=target, kind="qa_fail", reason=_first_line(objection))
         )
         if attempt == MAX_REVISIONS:
             log.error("evaluation never passed, failing closed", stage="qa")
             break
         state.revision_rounds += 1
-        candidate = await run_reasoning(adapters["reasoning"], state, context, objection)
+        candidate = await revise(objection or "")
 
     if verdict == "pass":
         state.handoffs.append(
-            Handoff(
-                frm="qa", to="reasoning", kind="qa_pass", reason="Verified against session data."
-            )
+            Handoff(frm="qa", to=target, kind="qa_pass", reason="Verified against session data.")
         )
+    return candidate, verdict
 
-    if verdict != "pass":
-        # Fail closed. Never deliver an unvalidated candidate.
-        state.reply = (
-            "I have your request but I am not able to give you a verified answer "
-            "on it right now. I would rather not guess with your records. Could you "
-            "rephrase what you are asking, or tell me a little more?"
-        )
-        state.owner = "chat"
-        state.record("chat", state.reply)
-        return state
 
-    state.reply = candidate
-    state.stage = "reasoned"
-    state.record("reasoning", candidate)
+def _fail_closed(state: TurnState, owner: Owner) -> TurnState:
+    """Never deliver an unvalidated candidate."""
+    state.reply = (
+        "I have your request but I am not able to give you a verified answer "
+        "on it right now. I would rather not guess with your records. Could you "
+        "rephrase what you are asking, or tell me a little more?"
+    )
+    state.owner = owner
+    state.record(owner, state.reply)
     return state
 
 

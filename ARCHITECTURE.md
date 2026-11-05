@@ -3,8 +3,8 @@
 Living draft. This file records current understanding of the OpenG2P Beneficiary Conversational Agent. It is not a frozen specification. Implementation and this document will move together. Where they disagree, record a decision rather than patching around it.
 
 Status: working demo, MCP contract live.
-Last reviewed: 2026-10-27.
-Change in: ADR-0002
+Last reviewed: 2026-11-05.
+Change in: ADR-0003
 Last updated by: Kaushalraj Puwar.
 
 ## 1. Purpose
@@ -51,7 +51,7 @@ Decided through grill, ratified in ADR.rst. Everything below it must be consiste
 | Layer | Choice | Notes |
 | --- | --- | --- |
 | Language | Python 3.12 | Already pinned by `.python-version` |
-| Harness | Plain async turn loop | Handoffs, gates and bounded retries implemented directly; LangGraph deferred |
+| Harness | Plain async turn loop | Two-agent or single-agent behind `SINGLE_AGENT`; gates and bounded retries implemented directly; LangGraph deferred |
 | Model clients | LangChain chat models, one fixed instance per agent | Handoff is graph edges, model calls are per node transport; no runtime model selection |
 | API | FastAPI plus Pydantic v2 | One dialogue service, exposed only through MCP |
 | Beneficiary 360 | Typed client behind an interface, mock now | Real spec exists, colleague owns it; swap mock for real without touching flow |
@@ -107,6 +107,21 @@ Notes:
 | QA and evaluation agent | Independent model | Retrieval validity, relevance, accuracy, completeness, safety |
 | Authenticator gate | Programmatic, non agent | Identity verification, beneficiary record resolution |
 | Agent harness | Infrastructure | Tool chain execution, flow control, chat and session state |
+
+## 9a. Agent modes
+
+`SINGLE_AGENT=false` (default) runs the two-agent flow. The chat agent receives
+identity and enrolment only and emits a route line. On `reasoning`, the
+reasoning agent receives the full snapshot and answers.
+
+`SINGLE_AGENT=true` runs one agent bound to `MODELID_1`. It receives the full
+snapshot and `prompts/single_agent.md`, and owns reception, lookups, analysis,
+presentation and the satisfaction question. There is no route line and no
+discarded draft. The two-agent modules and prompt remain in place, so the flag
+is the rollback.
+
+Both modes share the gate, session registry, QA switch, MCP tools and response
+contract. `owner` is `single` in single-agent mode.
 
 ## 10. Agent harness
 
@@ -317,6 +332,10 @@ The voice team integrates over MCP, not HTTP. One server, `grm.mcp.server:app`, 
 | `describe_contract` | Self-describing integration notes, so the other team never reads our source. |
 
 `DialogueService` is the single implementation of a turn. `grm/mcp/tools.py` is a thin adapter over it. There is no second channel adapter, so there is nothing for the flow to diverge against.
+
+Tool failures return `isError: true` with one fixed sentence, never the raw
+exception. Provider messages, HTTP codes and validation detail are logged
+internally with the tool name, and are not exposed to the caller.
 
 ## 21. Storage
 
