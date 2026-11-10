@@ -16,7 +16,7 @@ Channel = Literal["chat", "voice"]
 #: What the channel should ask the beneficiary for next. Telephony uses this to
 #: decide whether to prompt for an identifier, read back a code, or let the
 #: caller speak freely, without parsing the reply text.
-Expectation = Literal["beneficiary_id", "otp", "message", "closed"]
+Expectation = Literal["beneficiary_id", "otp", "confirmation", "message", "closed"]
 
 
 class TurnRequest(BaseModel):

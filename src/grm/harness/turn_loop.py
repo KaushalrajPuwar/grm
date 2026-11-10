@@ -19,11 +19,11 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from grm.agents.base import AgentAdapter, get_adapters
-from grm.auth.gate import AuthSession, release_blob
+from grm.auth.gate import AuthSession, drop_verification, release_blob
 from grm.beneficiary360.client import Beneficiary360Client
 from grm.beneficiary360.schemas import Beneficiary360Blob
 from grm.config import get_settings
-from grm.harness.gate_flow import handle_gate_message
+from grm.harness.gate_flow import LOOKING_INTO_IT, WELCOME, handle_gate_message
 from grm.harness.routing import (
     HANDOFF_INTENT,
     MAX_REVISIONS,
@@ -36,31 +36,9 @@ from grm.harness.routing import (
 from grm.harness.state import Handoff, Owner, TurnState
 from grm.observability.logging import get_logger
 
-WELCOME = (
-    "Hello. I can help with your schemes, your payments, and any problem you "
-    "have had receiving a benefit. First I need to verify your identity. "
-    "Please share your beneficiary ID."
-)
-
 
 def _context_from_blob(blob: Any) -> str:
     return json.dumps(blob.for_model(), indent=2, ensure_ascii=False)
-
-
-def _enrolment_summary(blob: Any) -> str:
-    if not blob.programs:
-        return "No programmes are on record."
-    parts = []
-    for program in blob.programs:
-        statuses = {e.enrolmentStatus for e in program.enrolments if e.enrolmentStatus}
-        if "ENROLLED" in statuses:
-            label = "enrolled"
-        elif "APPLIED" in statuses:
-            label = "applied for"
-        else:
-            continue
-        parts.append(f"{program.programName} ({label})")
-    return ", ".join(parts) or "No programmes are on record."
 
 
 async def handle_turn(
@@ -136,8 +114,8 @@ async def _handle_verified(
         since_turn_s=round(time.perf_counter() - started, 2),
     )
 
-    if session.stage == "greet":
-        return _handle_greeting(session, state, blob)
+    if session.stage == "confirm_identity":
+        return _handle_confirmation(session, state, blob, user_text)
 
     result = await _handle_authenticated_turn(adapters, state, blob, context)
     session.stage = result.stage
@@ -148,23 +126,29 @@ async def _handle_verified(
 def _handle_pre_auth(
     session: AuthSession, user_text: str, client: Beneficiary360Client, state: TurnState
 ) -> TurnState:
-    opening = state.stage == "greet"
+    """The identity gate, before any record is open.
 
-    if not user_text.strip() and opening:
+    The caller always speaks first. Their first turn is answered with the
+    welcome, once. Every later turn is an attempt at the registration number:
+    a match moves to name confirmation, and anything else gets the same request
+    for the number. There is no content sniffing, because a distressed caller
+    may open anywhere.
+    """
+    log = get_logger()
+
+    if state.stage == "greet":
         state.stage = "id_prompt"
         state.reply = WELCOME
         state.owner = "chat"
+        state.authenticated = False
+        session.stage = "id_prompt"
+        session.history.append({"role": "assistant", "text": state.reply})
+        log.info("gate greeted", stage="gate", outcome="id_prompt")
         return state
 
     reply, stage = handle_gate_message(session, user_text, client)
+    log.info("gate exchange", stage="gate", outcome=stage)
 
-    # A caller may open with speech ("hello?") rather than an identifier. On the
-    # very first turn that is not a failed lookup, so answer with the greeting
-    # instead of a rejection.
-    if opening and not session.verified and stage == "id_prompt":
-        reply = WELCOME
-
-    get_logger().info("gate exchange", stage="gate", outcome=stage)
     state.stage = stage
     state.owner = "chat"
     state.authenticated = session.verified
@@ -174,50 +158,147 @@ def _handle_pre_auth(
         state.handoffs.append(
             Handoff(frm="none", to="chat", kind="gate_open", reason="Identity verified.")
         )
-        # Verification just completed. Open immediately from the enrolment
-        # picture rather than making the beneficiary speak again first.
+        # Verification just completed. Confirm the name before opening the
+        # conversation, so a wrong record is caught by the caller, not by the
+        # agent reading out someone else's benefits.
         blob = release_blob(session)
         if blob is None:  # pragma: no cover - defensive
-            state.reply = "Verification did not complete. Please send your beneficiary ID again."
+            state.reply = (
+                "Verification did not complete. Please share your registration number again."
+            )
             return state
-        state.reply = _greeting(blob)
-        state.owner = "chat"
-        state.stage = "open"
+        state.reply = _confirmation_prompt(blob)
+        state.stage = "confirm_identity"
         state.authenticated = True
         state.blob_ref = blob.beneficiary.foundationalId
+        session.stage = "confirm_identity"
+        session.history.append({"role": "assistant", "text": state.reply})
+        return state
+
+    if stage == "otp_sent":
+        state.reply = reply
+        return state
+
+    # Not a registration number. Ask for it again, in the same words every time.
+    state.reply = LOOKING_INTO_IT
+    return state
+
+
+#: Words that confirm the caller is the person on the record.
+_AFFIRMATIVE = frozenset(
+    {
+        "yes",
+        "yeah",
+        "yep",
+        "yup",
+        "correct",
+        "right",
+        "speaking",
+        "that's me",
+        "that is me",
+        "it is",
+        "it's me",
+        "sure",
+        "ok",
+        "okay",
+    }
+)
+
+#: Words that deny it.
+_NEGATIVE = frozenset(
+    {"no", "nope", "nah", "wrong", "incorrect", "not me", "that's not me", "that is not me"}
+)
+
+
+def _confirmation_prompt(blob: Any) -> str:
+    """Ask the caller to confirm the name on the record."""
+    return f"Thank you. Am I talking with {_full_name(blob)}?"
+
+
+def _confirmation_retry(blob: Any) -> str:
+    return f"Sorry, I did not catch that. Am I talking with {_full_name(blob)}?"
+
+
+def _record_opening(blob: Any) -> str:
+    """Open the conversation with what the record shows. Speech ready."""
+    return (
+        "Thank you for confirming. I am seeing that you are registered for "
+        f"multiple benefits: {_spoken_enrolments(blob)}."
+    )
+
+
+def _full_name(blob: Any) -> str:
+    """Full name from the registry attributes, never invented."""
+    for registry in blob.registries:
+        for register in registry.registers:
+            attrs = register.attributes or {}
+            first, last = attrs.get("first_name"), attrs.get("last_name")
+            if first and last:
+                return f"{first} {last}"
+            if first:
+                return str(first)
+    return "the person on this record"
+
+
+def _display_name(blob: Any) -> str:
+    """First name, for prompts that address the caller directly."""
+    return _full_name(blob).split()[0]
+
+
+def _spoken_enrolments(blob: Any) -> str:
+    """Programme names as a spoken phrase. No brackets, no status codes."""
+    parts: list[str] = []
+    for program in blob.programs:
+        statuses = {e.enrolmentStatus for e in program.enrolments if e.enrolmentStatus}
+        if "ENROLLED" in statuses:
+            parts.append(f"the {program.programName}")
+        elif "APPLIED" in statuses:
+            parts.append(f"the {program.programName}, which is still an application")
+
+    if not parts:
+        return "no benefits at the moment"
+    if len(parts) == 1:
+        return parts[0]
+    return ", ".join(parts[:-1]) + ", and " + parts[-1]
+
+
+def _handle_confirmation(
+    session: AuthSession, state: TurnState, blob: Any, user_text: str
+) -> TurnState:
+    """Confirm the caller is the person on the record, then open the call."""
+    said = " ".join(user_text.lower().replace(".", " ").replace(",", " ").split())
+
+    state.owner = "chat"
+    state.authenticated = True
+    state.blob_ref = blob.beneficiary.foundationalId
+
+    if said in _AFFIRMATIVE or any(
+        said.startswith(word + " ") for word in _AFFIRMATIVE if " " not in word
+    ):
+        state.stage = "open"
+        state.reply = _record_opening(blob)
         session.stage = "open"
         session.history.append({"role": "assistant", "text": state.reply})
         return state
 
-    state.reply = reply
-    return state
+    if said in _NEGATIVE or said.startswith("no "):
+        # Wrong person. Drop verification and the snapshot together, then start
+        # the identity step again.
+        drop_verification(session)
+        state.authenticated = False
+        state.stage = "id_prompt"
+        state.reply = (
+            "I am sorry about that. I will close this record. "
+            "Could you please share the registration number again?"
+        )
+        session.stage = "id_prompt"
+        session.history.append({"role": "assistant", "text": state.reply})
+        return state
 
-
-def _greeting(blob: Any) -> str:
-    first = _display_name(blob)
-    return (
-        f"Welcome, {first}. On my records you are enrolled in: "
-        f"{_enrolment_summary(blob)}. What brings you here today?"
-    )
-
-
-def _display_name(blob: Any) -> str:
-    """First name from the registry attributes, never invented."""
-    for registry in blob.registries:
-        for register in registry.registers:
-            first = (register.attributes or {}).get("first_name")
-            if first:
-                return str(first)
-    return "there"
-
-
-def _handle_greeting(session: AuthSession, state: TurnState, blob: Any) -> TurnState:
-    state.owner = "chat"
-    state.stage = "open"
-    state.reply = _greeting(blob)
-    state.record("assistant", state.reply)
-    session.stage = "open"
-    session.history = list(state.history)
+    state.stage = "confirm_identity"
+    state.reply = _confirmation_retry(blob)
+    session.stage = "confirm_identity"
+    session.history.append({"role": "assistant", "text": state.reply})
     return state
 
 

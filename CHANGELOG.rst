@@ -5,6 +5,22 @@ GRM Changelog
 
 This file tracks changes and releases for the OpenG2P Beneficiary Conversational Agent project. Decisions live in ADR.rst.
 
+Version 0.4.0 (2026-11-10)
+--------------------------
+- Add a deterministic opening: the caller speaks first, the welcome is said
+  once, every later turn asks for the registration number, and the name is
+  confirmed before the record opens.
+- Remove the greeting detector. A distressed caller may open anywhere, so the
+  gate no longer guesses whether an utterance is a greeting.
+- Add the confirm_identity stage and the confirmation value to expects.
+- Denying the name drops verification and the snapshot, then asks for the number
+  again.
+- Rewrite the single-agent constitution around the call flow: holding line
+  before analysis, finding, meaning, next step, offer of further help.
+- Add speech-first rules to all agent constitutions: no markdown, parentheses,
+  symbols, abbreviations or status codes; full dates and spoken amounts.
+- Add channels/speech.py, a conservative normaliser applied to every reply.
+
 Version 0.3.0 (2026-11-05)
 --------------------------
 - Add SINGLE_AGENT, default false. When true, MODELID_1 handles every turn with

@@ -177,6 +177,19 @@ def reset(session: AuthSession) -> AuthSession:
     return AuthSession()
 
 
+def drop_verification(session: AuthSession) -> None:
+    """Clear verification in place, for a session already held by the registry.
+
+    Verification, the snapshot and the conversation position go together. A
+    caller who denies the name must not keep any of them.
+    """
+    session.state = GateState(status=GateStatus.AWAITING_ID)
+    session.expected_otp = None
+    session.blob = None
+    session.stage = "id_prompt"
+    session.history = []
+
+
 def _matches(candidate: str, expected: str) -> bool:
     if len(candidate) != len(expected):
         return False

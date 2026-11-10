@@ -3,7 +3,7 @@
 Living draft. This file records current understanding of the OpenG2P Beneficiary Conversational Agent. It is not a frozen specification. Implementation and this document will move together. Where they disagree, record a decision rather than patching around it.
 
 Status: working demo, MCP contract live.
-Last reviewed: 2026-11-05.
+Last reviewed: 2026-11-10.
 Change in: ADR-0003
 Last updated by: Kaushalraj Puwar.
 
@@ -122,6 +122,36 @@ is the rollback.
 
 Both modes share the gate, session registry, QA switch, MCP tools and response
 contract. `owner` is `single` in single-agent mode.
+
+### Call flow
+
+The gate and the opening are deterministic. The agent speaks only after the
+caller has confirmed their name.
+
+| Turn | Stage | Speaker | Text |
+| --- | --- | --- | --- |
+| first turn, whatever it says | greet | code | "Hello and welcome to OpenG2P support service. How can I help you today?" |
+| any later turn that is not a valid number | id_prompt | code | "Let me look into it. Could you please share your registration number?" |
+| valid registration number | confirm_identity | code | "Thank you. Am I talking with {full name}?" |
+| yes | open | code | "Thank you for confirming. I am seeing that you are registered for multiple benefits: {list}." |
+| no | id_prompt | code | verification and snapshot dropped, number requested again |
+| any later turn | open / reasoned | agent | generated |
+
+The caller always speaks first. The welcome is said once, on the first turn,
+regardless of what that turn contains. There is no greeting detection and no
+content sniffing: a distressed caller may open anywhere, and every turn after
+the welcome is treated as an attempt at the registration number until one
+resolves.
+
+`expects` reports `beneficiary_id`, `otp`, `confirmation`, `message` or `closed`.
+
+### Speech
+
+Every reply is read aloud by the caller's text-to-speech engine. Both agent
+constitutions forbid markdown, parentheses, symbols, abbreviations and status
+codes, and require full dates and spoken amounts. `channels/speech.py` runs a
+final normalisation at the service boundary so a model slip cannot reach a
+caller's ear as notation.
 
 ## 10. Agent harness
 

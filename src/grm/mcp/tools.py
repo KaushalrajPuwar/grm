@@ -179,7 +179,7 @@ async def describe_contract() -> dict[str, Any]:
     and what each expects value means.
     """
     return {
-        "contract_version": "1.4",
+        "contract_version": "1.5",
         "architecture": "single_agent" if get_settings().single_agent else "chat_plus_reasoning",
         "evaluation": "enabled" if get_settings().qa_enabled else "disabled",
         "identity_check": "auto (demo bypass)" if get_settings().demo_auto_verify else "otp",
@@ -205,12 +205,14 @@ async def describe_contract() -> dict[str, Any]:
             "greet": "session opened, nothing verified",
             "id_prompt": "waiting for a beneficiary identifier",
             "otp_sent": "waiting for the one-time code",
+            "confirm_identity": "waiting for the caller to confirm the name on the record",
             "open": "verified, ready for a normal question",
             "reasoned": "the previous turn was answered from the record",
         },
         "expects": {
             "beneficiary_id": "ask for the identifier; send it back as text",
             "otp": "ask for the four-digit code; send it back as text",
+            "confirmation": "ask whether the name is correct; send yes or no as text",
             "message": "free speech; send the transcript",
             "closed": "the session has ended",
         },

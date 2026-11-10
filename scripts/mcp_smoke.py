@@ -159,7 +159,24 @@ def main() -> int:
     check("channel alias telephony accepted", opened["session_id"] == session)
     check("nothing authenticated on open", opened["authenticated"] is False)
     check("channel is told to ask for an identifier", opened["expects"] == "beneficiary_id")
+    check("opening line is the fixed welcome", "OpenG2P support service" in opened["reply"])
     check("no name leaks pre-auth", "Lakshmi" not in opened["reply"])
+
+    repeated = client.call("route_turn", session_id=session, text="hello", channel="voice")
+    check("welcome is said only once", "OpenG2P support service" not in repeated["reply"])
+    check(
+        "a greeting after the welcome asks for the number",
+        "registration number" in repeated["reply"],
+    )
+
+    first_words = client.call(
+        "route_turn", session_id=session, text="I have a complaint", channel="voice"
+    )
+    check(
+        "first substantive message asks for the registration number",
+        "registration number" in first_words["reply"],
+    )
+    check("still unauthenticated after a complaint", first_words["authenticated"] is False)
 
     # Isolate this check from any code left behind by an earlier run.
     ISSUED_OTP.unlink(missing_ok=True)
@@ -174,7 +191,9 @@ def main() -> int:
 
     if auto_verify:
         check("identifier auto-verifies in demo mode", identified["authenticated"] is True)
-        check("channel goes straight to free speech", identified["expects"] == "message")
+        check(
+            "channel asks the caller to confirm the name", identified["expects"] == "confirmation"
+        )
         check("no OTP is pending in demo mode", identified["pending_otp"] is False)
         verified = identified
     else:
@@ -185,13 +204,32 @@ def main() -> int:
         check("identifier alone does not authenticate", identified["authenticated"] is False)
         verified = client.call("route_turn", session_id=session, text=code, channel="voice")
         check("code authenticates over MCP", verified["authenticated"] is True)
+        check("channel asks the caller to confirm the name", verified["expects"] == "confirmation")
 
-    check("greeting opens from the record", "Lakshmi" in verified["reply"])
-    check("channel is told to allow free speech", verified["expects"] == "message")
+    check("confirmation names the caller", "Lakshmi Narayan" in verified["reply"])
+
+    confirmed = client.call(
+        "route_turn", session_id=session, text="yes, that's me", channel="voice"
+    )
+    check("confirming the name opens the record", confirmed["expects"] == "message")
+    check("record opening names the benefits", "Domestic LPG Subsidy" in confirmed["reply"])
+    check("record opening is speech ready", "(" not in confirmed["reply"])
+    check("channel is told to allow free speech", confirmed["expects"] == "message")
     check(
         "gate opening appears in handoffs",
         any(h["kind"] == "gate_open" for h in verified["handoffs"]),
     )
+
+    banner("Wrong person on the record")
+    other = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=other, text="", channel="voice")
+    client.call("route_turn", session_id=other, text="FID-9988776655", channel="voice")
+    denied = client.call("route_turn", session_id=other, text="no, that is not me", channel="voice")
+    check("denying the name drops verification", denied["authenticated"] is False)
+    check("denying the name asks for a number again", denied["expects"] == "beneficiary_id")
+    check("denying the name leaks no record", "Lakshmi" not in denied["reply"])
+    after_denial = client.call("session_status", session_id=other)
+    check("denied session is unverified", after_denial["authenticated"] is False)
 
     banner("Route A over MCP: delivery already moving")
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
@@ -219,6 +257,10 @@ def main() -> int:
         "route_turn", session_id=session, text="why was my gas subsidy blocked this month?"
     )
     check("blocked question is answered by the expected agent", blocked["owner"] == analysis_owner)
+    for label, answer in (("delivery", moving["reply"]), ("blocked", blocked["reply"])):
+        check(f"{label} answer has no markdown", "**" not in answer and "*" not in answer)
+        check(f"{label} answer has no parentheses", "(" not in answer and ")" not in answer)
+        check(f"{label} answer has no currency symbol", "\u20b9" not in answer)
     check("answer names the cause", "aadhaar" in blocked["reply"].lower())
     check("answer names the amount", "300" in blocked["reply"])
     # Phrasing varies; grievance, ticket and complaint all name the same route.

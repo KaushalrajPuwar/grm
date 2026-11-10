@@ -21,6 +21,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -110,7 +111,9 @@ def say(who: str, reply: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://127.0.0.1:8100")
-    parser.add_argument("--session", default="walkthrough-1")
+    # Unique per run: the server keeps sessions in memory, so a fixed id would
+    # resume an earlier run and skip the greeting.
+    parser.add_argument("--session", default=f"walkthrough-{uuid.uuid4().hex[:8]}")
     args = parser.parse_args()
     client = McpClient(args.base)
     session = args.session
@@ -132,19 +135,34 @@ def main() -> int:
     show("check_connection", greeting)
     check("server replies with the connectivity string", greeting.startswith("hi you are now"))
 
-    step("open the call, before any identity is given")
-    opened = client.call("route_turn", session_id=session, text="", channel="voice")
+    step("the caller speaks first")
+    opened = client.call("route_turn", session_id=session, text="Hello", channel="voice")
     say("agent", opened["reply"])
     check("not authenticated yet", opened["authenticated"] is False)
     check("channel is told to ask for an identifier", opened["expects"] == "beneficiary_id")
+    check("opening is the fixed welcome", "OpenG2P support service" in opened["reply"])
     check("no beneficiary data in the opening", "Lakshmi" not in opened["reply"])
 
-    step("send the beneficiary identifier")
+    step("greeting again does not repeat the welcome")
+    again = client.call("route_turn", session_id=session, text="hello", channel="voice")
+    say("agent", again["reply"])
+    check("welcome is said once", "OpenG2P support service" not in again["reply"])
+    check("asks for the registration number", "registration number" in again["reply"])
+
+    step("state a problem before identifying")
+    complaint = client.call(
+        "route_turn", session_id=session, text="I have a complaint", channel="voice"
+    )
+    say("agent", complaint["reply"])
+    check("asks for the registration number", "registration number" in complaint["reply"])
+    check("still unauthenticated", complaint["authenticated"] is False)
+
+    step("send the registration number")
     identified = client.call("route_turn", session_id=session, text=BENEFICIARY_ID, channel="voice")
     say("agent", identified["reply"])
 
     if identified["authenticated"]:
-        check("channel goes straight to free speech", identified["expects"] == "message")
+        check("asks the caller to confirm the name", identified["expects"] == "confirmation")
         check("no OTP is pending", identified["pending_otp"] is False)
     else:
         check("identifier alone does not authenticate", identified["authenticated"] is False)
@@ -166,14 +184,28 @@ def main() -> int:
         verified = client.call("route_turn", session_id=session, text=code, channel="voice")
         say("agent", verified["reply"])
         check("code authenticates", verified["authenticated"] is True)
-    check("greeting names the beneficiary", "Lakshmi" in verified["reply"])
-    check("channel is told to allow free speech", verified["expects"] == "message")
+    check("confirmation names the caller", "Lakshmi Narayan" in verified["reply"])
+    check("channel asks for confirmation", verified["expects"] == "confirmation")
+
+    step("confirm the name")
+    confirmed = client.call(
+        "route_turn", session_id=session, text="yes, that's me", channel="voice"
+    )
+    say("agent", confirmed["reply"])
+    check("record opening names the benefits", "Domestic LPG Subsidy" in confirmed["reply"])
+    check("record opening is speech ready", "(" not in confirmed["reply"])
+    check("channel is told to allow free speech", confirmed["expects"] == "message")
 
     step("ask a reference question")
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
     say(f"agent({lookup['owner']})", lookup["reply"])
     check(f"answered by {lookup_owner}", lookup["owner"] == lookup_owner)
-    check("answers with the connection number", "TG-4471-9920" in lookup["reply"])
+    # The agent may read the number in groups for speech: "T G 4471 9920".
+    check(
+        "answers with the connection number",
+        "4471" in lookup["reply"] and "9920" in lookup["reply"],
+        lookup["reply"][:120],
+    )
 
     step("ask when the cylinder will arrive")
     delivery = client.call(
@@ -189,6 +221,10 @@ def main() -> int:
         bool(re.search(r"2026-10-24|24 october|october 24", delivery["reply"], re.IGNORECASE)),
     )
     check("QA is disabled in this build", delivery["qa_verdict"] is None)
+    check(
+        "delivery answer is speech ready",
+        "**" not in delivery["reply"] and "(" not in delivery["reply"],
+    )
 
     step("ask why the subsidy was blocked")
     blocked = client.call(
@@ -218,7 +254,7 @@ def main() -> int:
     check("asks for an identifier again", resumed["expects"] == "beneficiary_id")
     check(
         "greets a fresh call instead of rejecting the speech",
-        "beneficiary ID" in resumed["reply"],
+        "OpenG2P support service" in resumed["reply"],
         resumed["reply"][:120],
     )
 

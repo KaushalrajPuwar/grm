@@ -17,6 +17,7 @@ from grm.channels.schemas import (
     TurnRequest,
     TurnResponse,
 )
+from grm.channels.speech import to_speech
 from grm.harness.turn_loop import handle_turn
 from grm.store.registry import SessionRegistry
 
@@ -25,6 +26,7 @@ _EXPECTS_BY_STAGE: dict[str, Expectation] = {
     "greet": "beneficiary_id",
     "id_prompt": "beneficiary_id",
     "otp_sent": "otp",
+    "confirm_identity": "confirmation",
     "open": "message",
     "reasoned": "message",
     "verified": "message",
@@ -45,7 +47,9 @@ class DialogueService:
 
         return TurnResponse(
             session_id=request.session_id,
-            reply=state.reply,
+            # Speech-ready: the reply may be read aloud, so notation is removed
+            # before it leaves the service.
+            reply=to_speech(state.reply),
             owner=state.owner,
             stage=state.stage,
             authenticated=state.authenticated,
