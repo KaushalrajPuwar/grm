@@ -1,12 +1,13 @@
 {
     "@context": "https://schemas.openg2p.org/beneficiary360/v1/context.jsonld",
-    "@id": "urn:g2p:beneficiary360:FID-9988776655:2026-10-20T09:15:00Z",
+    "@id": "urn:g2p:beneficiary360:FID9988776655:2026-10-20T09:15:00Z",
     "@type": "Beneficiary360Response",
     "beneficiary": {
-        "foundationalId": "FID-9988776655",
+        "foundationalId": "FID9988776655",
         "matchedProgramCount": 2,
         "matchedRegistryCount": 3
     },
+    "demo_registered_mobile": "9845012345",
     "bridgeProcessing": [
         {
             "benefitCodeMnemonic": "LPG_CYLINDER",
@@ -108,7 +109,7 @@
         "correlationId": "my-manual-test-001",
         "generatedAt": "2026-10-29T09:15:00Z",
         "requestParameters": {
-            "foundationalId": "FID-9988776655",
+            "foundationalId": "FID9988776655",
             "timeframe": "Timeframe-Medium"
         },
         "resolvedTimeframe": {
@@ -239,7 +240,7 @@
                         "source_of_income": "SMALL_BUSINESS",
                         "lpg_consumer_class": "GENERAL"
                     },
-                    "foundationalId": "FID-9988776655",
+                    "foundationalId": "FID9988776655",
                     "functionalRecordId": "LPG-REC-0001",
                     "internalRecordId": "b1a2c3d4-0001",
                     "linkFoundationalId": null,
@@ -306,7 +307,7 @@
                         "bank_account_masked": "XXXXXX4321",
                         "bank_seeded_aadhaar_last4": "9912"
                     },
-                    "foundationalId": "FID-9988776655",
+                    "foundationalId": "FID9988776655",
                     "functionalRecordId": "PBMS-REC-0011",
                     "internalRecordId": "c9d0e1f2-0001",
                     "linkFoundationalId": null,
@@ -326,7 +327,7 @@
                         "disability_severity": "MODERATE",
                         "disability_type": "MOBILITY"
                     },
-                    "foundationalId": "FID-9988776655",
+                    "foundationalId": "FID9988776655",
                     "functionalRecordId": "DIS-REC-0009",
                     "internalRecordId": "e5f6a7b8-0001",
                     "linkFoundationalId": null,

@@ -1,0 +1,205 @@
+{
+    "@context": "https://schemas.openg2p.org/beneficiary360/v1/context.jsonld",
+    "@id": "urn:g2p:beneficiary360:FID1122334455:2026-11-10T09:15:00Z",
+    "@type": "Beneficiary360Response",
+    "beneficiary": {
+        "foundationalId": "FID1122334455",
+        "matchedProgramCount": 1,
+        "matchedRegistryCount": 2
+    },
+    "demo_registered_mobile": "9876501234",
+    "bridgeProcessing": [
+        {
+            "benefitCodeMnemonic": "PMAY_INSTALMENT",
+            "benefitProgramMnemonic": "PMAY_G_2026",
+            "benefitType": "CASH_DIGITAL",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "PMAY_G_2026-CYCLE-03",
+            "disbursementEnvelopeId": "ENV-0042-03-PMAY",
+            "disbursementRecon": {
+                "remittanceReferenceNumber": "RRN-20261012-778812",
+                "reversalFound": false
+            },
+            "totalDisbursementQuantity": 40000.0,
+            "subsidyReleaseStatus": "RELEASED",
+            "blocker": null,
+            "workflow": {
+                "fundsAvailableWithBank": 40000.0,
+                "fundsBlockedWithBank": 0,
+                "numberOfDisbursementsReconciled": 8642,
+                "numberOfDisbursementsReversed": 0,
+                "numberOfDisbursementsShipped": 8642,
+                "sponsorBankDispatchStatus": "PROCESSED",
+                "workflowType": "CASH_DIGITAL"
+            }
+        }
+    ],
+    "meta": {
+        "correlationId": "my-manual-test-002",
+        "generatedAt": "2026-11-10T09:15:00Z",
+        "requestParameters": {
+            "foundationalId": "FID1122334455",
+            "timeframe": "Timeframe-Medium"
+        },
+        "resolvedTimeframe": {
+            "end": "2026-11-10",
+            "perSourceSystem": [
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "PMAY_REGISTRY"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "NATIONAL_SOCIAL_REGISTRY"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "PBMS"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "G2P_BRIDGE"
+                }
+            ],
+            "start": "2025-11-10"
+        },
+        "sourceSystemsQueried": [
+            "PMAY_REGISTRY",
+            "NATIONAL_SOCIAL_REGISTRY",
+            "PBMS",
+            "G2P_BRIDGE"
+        ],
+        "warnings": []
+    },
+    "programs": [
+        {
+            "disbursements": [
+                {
+                    "benefitCodeMnemonic": "PMAY_INSTALMENT",
+                    "benefitType": "CASH_DIGITAL",
+                    "cancellationStatus": "NOT_CANCELLED",
+                    "cycleMnemonic": "PMAY_G_2026-CYCLE-03",
+                    "disbursementCycleId": "DC-0042-03",
+                    "disbursementDate": "2026-10-12",
+                    "disbursementEnvelopeId": "ENV-0042-03-PMAY",
+                    "disbursementId": "DISB-77410",
+                    "disbursementQuantity": 40000,
+                    "narrative": "PMAY-G third instalment, credited on 2026-10-12, transaction RRN-20261012-778812"
+                }
+            ],
+            "enrolments": [
+                {
+                    "beneficiaryListId": "BL-0042-0001",
+                    "eligibilityProcessStatus": "PROCESSED",
+                    "enrollmentCycleId": "EC-0042-01",
+                    "enrolmentStatus": "ENROLLED",
+                    "entitlementProcessStatus": "PROCESSED",
+                    "listDate": "2026-03-15",
+                    "listMnemonic": "PMAY_G_2026-ENROL-01"
+                }
+            ],
+            "lpgConnection": null,
+            "programId": "PROG-0042",
+            "programMnemonic": "PMAY_G_2026",
+            "programName": "Pradhan Mantri Awaas Yojana - Gramin",
+            "programStatus": "ACTIVE",
+            "targetRegistry": "PMAY_REGISTRY"
+        }
+    ],
+    "registries": [
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "first_name": "Sunita",
+                        "last_name": "Devi",
+                        "source_of_income": "AGRICULTURE",
+                        "household_head": true
+                    },
+                    "foundationalId": "FID1122334455",
+                    "functionalRecordId": "PMAY-REC-0001",
+                    "internalRecordId": "f1a2b3c4-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "PMAY_BENEFICIARY",
+                    "registerName": "PMAY Beneficiary",
+                    "tables": [
+                        {
+                            "attributes": {
+                                "house_id": "PMAY-HOUSE-4471",
+                                "sanction_date": "2026-02-20",
+                                "house_status": "UNDER_CONSTRUCTION",
+                                "unit_type": "RURAL_PUCCA"
+                            },
+                            "internalRecordId": "f1a2b3c4-0100",
+                            "linkInternalRecordId": "f1a2b3c4-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "HOUSE",
+                            "tableName": "House",
+                            "tables": [
+                                {
+                                    "attributes": {
+                                        "instalment_number": 3,
+                                        "instalment_amount_inr": 40000,
+                                        "released_date": "2026-10-12",
+                                        "transaction_reference": "RRN-20261012-778812"
+                                    },
+                                    "internalRecordId": "f1a2b3c4-0200",
+                                    "linkInternalRecordId": "f1a2b3c4-0100",
+                                    "recordStatus": "ACTIVE",
+                                    "tableMnemonic": "INSTALMENT",
+                                    "tableName": "Instalment",
+                                    "tables": []
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": {
+                                "household_head": true,
+                                "number_of_children": 3,
+                                "size_of_group": 5
+                            },
+                            "internalRecordId": "f1a2b3c4-0300",
+                            "linkInternalRecordId": "f1a2b3c4-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "HOUSEHOLD",
+                            "tableName": "Household",
+                            "tables": []
+                        }
+                    ]
+                }
+            ],
+            "registryCode": "PMAY_REGISTRY",
+            "registryName": "PMAY-Registry",
+            "registrySystem": {
+                "baseUrl": "https://pmay-registry.example.gov",
+                "version": "1.2.0"
+            }
+        },
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "aadhaar_last4": "4412",
+                        "bank_account_masked": "XXXXXX7788",
+                        "bank_seeded_aadhaar_last4": "4412"
+                    },
+                    "foundationalId": "FID1122334455",
+                    "functionalRecordId": "PBMS-REC-0044",
+                    "internalRecordId": "c4d5e6f7-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "SOCIAL_BENEFICIARY",
+                    "registerName": "Social Beneficiary",
+                    "tables": []
+                }
+            ],
+            "registryCode": "NATIONAL_SOCIAL_REGISTRY",
+            "registryName": "National Social Registry"
+        }
+    ]
+}

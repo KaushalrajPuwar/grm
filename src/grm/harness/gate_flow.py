@@ -1,13 +1,17 @@
-"""Pre-authentication gate conversation. No agent model is called.
+"""Pre-authentication gate conversation. No record is read before it passes.
 
 Until the Authenticator Gate passes, there is no protected data and no reasoning
 to do. A deterministic script handles the exchange so no model can leak anything
-by improvising. The agent resumes only after verification.
+by improvising.
+
+The one exception is reading the registration number out of speech. Speech
+recognition is unreliable, so a small model extracts the digits from the
+utterance. It never decides whether they are valid: `resolve_identifier` matches
+the extracted digits against the record, and only a match opens the gate.
 
 The caller always speaks first. Their first turn is answered with the welcome,
 once. Every later turn is an attempt at the registration number: a match moves
 to name confirmation, and anything else gets the same request for the number.
-There is no content sniffing, because a distressed caller may open anywhere.
 
 The OTP is issued through `grm.auth.otp`, which publishes it for the standalone
 issuer process to display. A human reads it on that terminal and types it into
@@ -18,7 +22,9 @@ Every line here is written for speech: no symbols, no parentheses, no markdown.
 
 from __future__ import annotations
 
+from grm.agents.base import AgentAdapter
 from grm.auth.gate import AuthSession, GateStatus, submit_identifier, submit_otp
+from grm.auth.identifier import resolve_identifier
 from grm.auth.otp import clear_issued, issue_otp
 from grm.beneficiary360.client import Beneficiary360Client
 
@@ -39,8 +45,11 @@ OTP_RETRY = (
 )
 
 
-def handle_gate_message(
-    session: AuthSession, text: str, client: Beneficiary360Client
+async def handle_gate_message(
+    session: AuthSession,
+    text: str,
+    client: Beneficiary360Client,
+    adapter: AgentAdapter,
 ) -> tuple[str, str]:
     """Return (reply, stage) for one gate turn.
 
@@ -54,17 +63,26 @@ def handle_gate_message(
         return LOOKING_INTO_IT, "id_prompt"
 
     if status is GateStatus.OTP_SENT:
-        return _handle_code(session, cleaned, client)
+        return await _handle_code(session, cleaned, client)
 
-    return _handle_identifier(session, cleaned, client)
+    return await _handle_identifier(session, cleaned, client, adapter)
 
 
-def _handle_identifier(
-    session: AuthSession, cleaned: str, client: Beneficiary360Client
+async def _handle_identifier(
+    session: AuthSession,
+    text: str,
+    client: Beneficiary360Client,
+    adapter: AgentAdapter,
 ) -> tuple[str, str]:
+    # Speech first: the resolver normalises what was said and matches it against
+    # the record. Only a real match returns an identifier.
+    identifier = await resolve_identifier(text, client, adapter)
+    if identifier is None:
+        return LOOKING_INTO_IT, "id_prompt"
+
     # issue_otp runs only once a record matches, so an unknown identifier never
     # publishes a live code to the issuer process.
-    state = submit_identifier(session, cleaned, client, issue_otp)
+    state = submit_identifier(session, identifier, client, issue_otp)
 
     # No reply text here: once identity resolves, the caller is asked to confirm
     # the name, and that line needs the record. The turn loop builds it.
@@ -77,7 +95,7 @@ def _handle_identifier(
     return LOOKING_INTO_IT, "id_prompt"
 
 
-def _handle_code(
+async def _handle_code(
     session: AuthSession, cleaned: str, client: Beneficiary360Client
 ) -> tuple[str, str]:
     state = submit_otp(session, cleaned)

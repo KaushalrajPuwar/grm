@@ -143,13 +143,61 @@ content sniffing: a distressed caller may open anywhere, and every turn after
 the welcome is treated as an attempt at the registration number until one
 resolves.
 
+Each person's record is one JSON file under `src/grm/data/beneficiaries/`,
+named after their registration number. Three demo records exist:
+`FID9988776655.json` (LPG subsidy and solar pump), `FID1122334455.json`
+(PMAY-G, with a completed instalment), and `FID5566778899.json` (fertilizer
+support, one cycle delivered and the next scheduled ahead). All three carry the
+same field set; only the values differ. The
+file name is the index: listing the directory gives every resolvable identifier
+without reading a record, and a record is only opened after a caller has been
+matched to it. Adding a person is dropping a file.
+
+The verified snapshot is serialised into the system prompt for that turn. It is
+not held in a vector store or a database, and only one person's record is ever
+in the prompt.
+
+Every snapshot handed to an agent begins with `on_this_record`, a short index of
+the programme names and benefit types actually present. It is an orientation
+aid; the full record remains the authority.
+
+The single-agent constitution is written around evidence rather than around
+specific cases. It requires every claim to be traceable to a value, treats what
+the caller asserts as a claim to verify rather than a fact to accept, requires a
+named scheme to be found in the record before it is discussed, resolves relative
+time against the record's dates, distinguishes states precisely, forbids
+generalising across records or inventing causes, and requires conflicting
+records to be surfaced rather than silently resolved. Closing follows intent: a
+goodbye ends the call without another offer.
+
+Registration numbers are resolved from speech rather than matched as strings.
+Speech recognition renders digits as words, inserts commas and full stops
+between them, and groups them unpredictably. `auth/identifier.py` normalises the
+utterance with a token grammar: digit words, tens and teens, "double" and
+"triple", separators and filler words. If no candidate matches, a small model
+reads the transcript and returns the digits it heard. The model never decides
+validity; the extracted digits are matched against the record, and only a match
+opens the gate. The identifier is compared on digits alone, so the FID prefix
+and any separators are irrelevant.
+
 `expects` reports `beneficiary_id`, `otp`, `confirmation`, `message` or `closed`.
 
 ### Speech
 
-Every reply is read aloud by the caller's text-to-speech engine. Both agent
+Every reply is read aloud by the caller's text-to-speech engine. The
 constitutions forbid markdown, parentheses, symbols, abbreviations and status
-codes, and require full dates and spoken amounts. `channels/speech.py` runs a
+codes, and require full dates and spoken amounts.
+
+The single-agent constitution also carries service tone. It forbids implying
+that a question was unnecessary, avoids minimising words, leads with
+reassurance when the record supports it, takes the lead on anything that
+changes what the caller should do, and closes with an offer rather than a
+verdict.
+
+It also carries judgement about what is worth saying aloud. It prefers meaning to labels, does not volunteer long reference
+numbers, compresses lists and status vocabulary, and asks whether a good human
+agent would say the line on a call. Brevity never overrides substance: an
+amount, a date, a required step or a reason is always stated. `channels/speech.py` runs a
 final normalisation at the service boundary so a model slip cannot reach a
 caller's ear as notation.
 

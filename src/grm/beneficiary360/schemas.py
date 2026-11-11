@@ -203,7 +203,16 @@ class Beneficiary360Blob(SnapModel):
         """Plain dict for prompt embedding, with the reading guide attached."""
         from grm.beneficiary360.field_semantics import FIELD_SEMANTICS
 
+        # The index is deliberately first. A caller often names a scheme from
+        # memory, and the model must be able to check that name against the
+        # record before it answers, rather than pattern-matching on one word.
         return {
+            "on_this_record": {
+                "programmes": [program.programName for program in self.programs],
+                "benefit_types": sorted(
+                    {entry.benefitType for entry in self.bridgeProcessing if entry.benefitType}
+                ),
+            },
             "response": self.model_dump(mode="json", by_alias=True),
             "how_to_read_these_fields": FIELD_SEMANTICS,
         }

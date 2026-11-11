@@ -67,7 +67,7 @@ async def handle_turn(
     state.user_text = user_text
 
     if not session.verified:
-        result = _handle_pre_auth(session, user_text, client, state)
+        result = await _handle_pre_auth(session, user_text, client, state, adapters)
     else:
         result = await _handle_verified(session, user_text, adapters, state, started)
 
@@ -123,8 +123,12 @@ async def _handle_verified(
     return result
 
 
-def _handle_pre_auth(
-    session: AuthSession, user_text: str, client: Beneficiary360Client, state: TurnState
+async def _handle_pre_auth(
+    session: AuthSession,
+    user_text: str,
+    client: Beneficiary360Client,
+    state: TurnState,
+    adapters: dict[str, AgentAdapter],
 ) -> TurnState:
     """The identity gate, before any record is open.
 
@@ -146,7 +150,7 @@ def _handle_pre_auth(
         log.info("gate greeted", stage="gate", outcome="id_prompt")
         return state
 
-    reply, stage = handle_gate_message(session, user_text, client)
+    reply, stage = await handle_gate_message(session, user_text, client, adapters["identifier"])
     log.info("gate exchange", stage="gate", outcome=stage)
 
     state.stage = stage
@@ -221,6 +225,21 @@ def _confirmation_retry(blob: Any) -> str:
 
 def _record_opening(blob: Any) -> str:
     """Open the conversation with what the record shows. Speech ready."""
+    active = [
+        program
+        for program in blob.programs
+        if any(entry.enrolmentStatus in {"ENROLLED", "APPLIED"} for entry in program.enrolments)
+    ]
+    if not active:
+        return (
+            "Thank you for confirming. I do not see an active benefit on your record "
+            "at the moment. What would you like to ask about?"
+        )
+    if len(active) == 1:
+        return (
+            "Thank you for confirming. I am seeing that you are registered for "
+            f"a benefit: {_spoken_enrolments(blob)}."
+        )
     return (
         "Thank you for confirming. I am seeing that you are registered for "
         f"multiple benefits: {_spoken_enrolments(blob)}."

@@ -26,7 +26,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OTP_FILE = REPO_ROOT / "var" / "demo_otp_issued.json"
-BENEFICIARY_ID = "FID-9988776655"
+BENEFICIARY_ID = "FID9988776655"
 
 failures: list[str] = []
 STEP = 0
@@ -200,10 +200,12 @@ def main() -> int:
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
     say(f"agent({lookup['owner']})", lookup["reply"])
     check(f"answered by {lookup_owner}", lookup["owner"] == lookup_owner)
-    # The agent may read the number in groups for speech: "T G 4471 9920".
+    # The agent may read the number in groups for speech: "T G 4471 9920",
+    # or digit by digit. Compare the digits only.
+    digits = re.sub(r"\D", "", lookup["reply"])
     check(
         "answers with the connection number",
-        "4471" in lookup["reply"] and "9920" in lookup["reply"],
+        "44719920" in digits,
         lookup["reply"][:120],
     )
 

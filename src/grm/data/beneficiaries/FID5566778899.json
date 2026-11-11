@@ -1,0 +1,234 @@
+{
+    "@context": "https://schemas.openg2p.org/beneficiary360/v1/context.jsonld",
+    "@id": "urn:g2p:beneficiary360:FID5566778899:2026-11-10T09:15:00Z",
+    "@type": "Beneficiary360Response",
+    "beneficiary": {
+        "foundationalId": "FID5566778899",
+        "matchedProgramCount": 1,
+        "matchedRegistryCount": 2
+    },
+    "demo_registered_mobile": "9822014455",
+    "bridgeProcessing": [
+        {
+            "benefitCodeMnemonic": "FERTILIZER_BAGS",
+            "benefitProgramMnemonic": "FERT_SUPPORT_2026",
+            "benefitType": "COMMODITY",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "FERT_SUPPORT_2026-CYCLE-01",
+            "disbursementEnvelopeId": "ENV-0055-01-FERT",
+            "totalDisbursementQuantity": 4,
+            "dispatchSchedule": {
+                "dispatchedDate": "2026-09-08",
+                "expectedDeliveryBy": "2026-09-10",
+                "deliveryStatus": "DELIVERED_TO_BENEFICIARY",
+                "deliveryAgentId": "DA-0612"
+            },
+            "workflow": {
+                "agencyAllocationStatus": "PROCESSED",
+                "agencyMnemonic": "AGENCY_AGRI_COOP_09",
+                "agencyNotificationStatus": "PROCESSED",
+                "faResolutionStatus": "PROCESSED",
+                "geoResolutionStatus": "PROCESSED",
+                "warehouseAllocationStatus": "PROCESSED",
+                "warehouseMnemonic": "WH_AGRI_NASHIK_01",
+                "warehouseNotificationStatus": "PROCESSED",
+                "workflowType": "GOODS"
+            }
+        },
+        {
+            "benefitCodeMnemonic": "FERTILIZER_BAGS",
+            "benefitProgramMnemonic": "FERT_SUPPORT_2026",
+            "benefitType": "COMMODITY",
+            "cancellationStatus": "NOT_CANCELLED",
+            "cycleCodeMnemonic": "FERT_SUPPORT_2026-CYCLE-02",
+            "disbursementEnvelopeId": "ENV-0055-02-FERT",
+            "totalDisbursementQuantity": 4,
+            "dispatchSchedule": {
+                "dispatchedDate": null,
+                "expectedDeliveryBy": "2026-11-25",
+                "deliveryStatus": "SCHEDULED",
+                "deliveryAgentId": null,
+                "trackingReference": null
+            },
+            "workflow": {
+                "agencyAllocationStatus": "PROCESSED",
+                "agencyMnemonic": "AGENCY_AGRI_COOP_09",
+                "agencyNotificationStatus": "PROCESSED",
+                "faResolutionStatus": "PROCESSED",
+                "geoResolutionStatus": "PROCESSED",
+                "warehouseAllocationStatus": "PROCESSED",
+                "warehouseMnemonic": "WH_AGRI_NASHIK_01",
+                "warehouseNotificationStatus": "PROCESSED",
+                "workflowType": "GOODS"
+            }
+        }
+    ],
+    "meta": {
+        "correlationId": "my-manual-test-003",
+        "generatedAt": "2026-11-10T09:15:00Z",
+        "requestParameters": {
+            "foundationalId": "FID5566778899",
+            "timeframe": "Timeframe-Medium"
+        },
+        "resolvedTimeframe": {
+            "end": "2026-11-10",
+            "perSourceSystem": [
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "FARMER_REGISTRY"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "NATIONAL_SOCIAL_REGISTRY"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "PBMS"
+                },
+                {
+                    "end": "2026-11-10",
+                    "start": "2025-11-10",
+                    "system": "G2P_BRIDGE"
+                }
+            ],
+            "start": "2025-11-10"
+        },
+        "sourceSystemsQueried": [
+            "FARMER_REGISTRY",
+            "NATIONAL_SOCIAL_REGISTRY",
+            "PBMS",
+            "G2P_BRIDGE"
+        ],
+        "warnings": []
+    },
+    "programs": [
+        {
+            "disbursements": [
+                {
+                    "benefitCodeMnemonic": "FERTILIZER_BAGS",
+                    "benefitType": "COMMODITY",
+                    "cancellationStatus": "NOT_CANCELLED",
+                    "cycleMnemonic": "FERT_SUPPORT_2026-CYCLE-01",
+                    "disbursementCycleId": "DC-0055-01",
+                    "disbursementDate": "2026-09-08",
+                    "disbursementEnvelopeId": "ENV-0055-01-FERT",
+                    "disbursementId": "DISB-66120",
+                    "disbursementQuantity": 4,
+                    "narrative": "Fertilizer allocation, cycle 1, delivered 2026-09-10"
+                }
+            ],
+            "enrolments": [
+                {
+                    "beneficiaryListId": "BL-0055-0001",
+                    "eligibilityProcessStatus": "PROCESSED",
+                    "enrollmentCycleId": "EC-0055-01",
+                    "enrolmentStatus": "ENROLLED",
+                    "entitlementProcessStatus": "PROCESSED",
+                    "listDate": "2026-06-01",
+                    "listMnemonic": "FERT_SUPPORT_2026-ENROL-01"
+                }
+            ],
+            "lpgConnection": null,
+            "programId": "PROG-0055",
+            "programMnemonic": "FERT_SUPPORT_2026",
+            "programName": "Fertilizer Support Programme 2026",
+            "programStatus": "ACTIVE",
+            "targetRegistry": "FARMER_REGISTRY"
+        }
+    ],
+    "registries": [
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "first_name": "Ramesh",
+                        "last_name": "Patil",
+                        "source_of_income": "AGRICULTURE",
+                        "farmer_category": "SMALL_AND_MARGINAL"
+                    },
+                    "foundationalId": "FID5566778899",
+                    "functionalRecordId": "FARM-REC-0055",
+                    "internalRecordId": "a7b8c9d0-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "FARMER",
+                    "registerName": "Farmer",
+                    "tables": [
+                        {
+                            "attributes": {
+                                "land_size": 1.8,
+                                "unit": "HECTARE",
+                                "land_ownership_type": "OWNED",
+                                "current_land_use": "CROPLAND"
+                            },
+                            "internalRecordId": "a7b8c9d0-0100",
+                            "linkInternalRecordId": "a7b8c9d0-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "LAND",
+                            "tableName": "Land",
+                            "tables": [
+                                {
+                                    "attributes": {
+                                        "commodity": "WHEAT",
+                                        "season": "RABI",
+                                        "planted_date": "2026-10-28",
+                                        "end_use": "SALE"
+                                    },
+                                    "internalRecordId": "a7b8c9d0-0200",
+                                    "linkInternalRecordId": "a7b8c9d0-0100",
+                                    "recordStatus": "ACTIVE",
+                                    "tableMnemonic": "CROP",
+                                    "tableName": "Crop",
+                                    "tables": []
+                                }
+                            ]
+                        },
+                        {
+                            "attributes": {
+                                "household_head": true,
+                                "number_of_children": 2,
+                                "size_of_group": 4
+                            },
+                            "internalRecordId": "a7b8c9d0-0300",
+                            "linkInternalRecordId": "a7b8c9d0-0001",
+                            "recordStatus": "ACTIVE",
+                            "tableMnemonic": "HOUSEHOLD",
+                            "tableName": "Household",
+                            "tables": []
+                        }
+                    ]
+                }
+            ],
+            "registryCode": "FARMER_REGISTRY",
+            "registryName": "Farmer-Registry",
+            "registrySystem": {
+                "baseUrl": "https://farmer-registry.example.gov",
+                "version": "1.4.0"
+            }
+        },
+        {
+            "registers": [
+                {
+                    "attributes": {
+                        "aadhaar_last4": "6621",
+                        "bank_account_masked": "XXXXXX3344",
+                        "bank_seeded_aadhaar_last4": "6621"
+                    },
+                    "foundationalId": "FID5566778899",
+                    "functionalRecordId": "PBMS-REC-0055",
+                    "internalRecordId": "c7d8e9f0-0001",
+                    "linkFoundationalId": null,
+                    "recordStatus": "ACTIVE",
+                    "registerMnemonic": "SOCIAL_BENEFICIARY",
+                    "registerName": "Social Beneficiary",
+                    "tables": []
+                }
+            ],
+            "registryCode": "NATIONAL_SOCIAL_REGISTRY",
+            "registryName": "National Social Registry"
+        }
+    ]
+}

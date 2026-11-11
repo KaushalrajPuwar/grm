@@ -5,6 +5,46 @@ GRM Changelog
 
 This file tracks changes and releases for the OpenG2P Beneficiary Conversational Agent project. Decisions live in ADR.rst.
 
+Version 0.5.0 (2026-11-11)
+--------------------------
+- Registration numbers are now FID followed by digits, with no hyphen.
+- Resolve registration numbers from speech instead of exact string matching.
+  A token grammar handles digit words, tens and teens, "double" and "triple",
+  commas, full stops and filler words. A small model extracts the digits when
+  the grammar finds nothing. The model never decides validity; the digits are
+  matched against the record.
+- Add prompts/identifier_agent.md and the identifier role, bound to MODELID_1.
+- Add identity rules to all three agent constitutions: never ask for, repeat or
+  validate a registration number.
+- Add tests/test_identifier.py, the first real unit tests in the repo.
+- Rewrite the single-agent constitution around evidence rather than cases:
+  trace every claim, check the premise rather than only the question, find the
+  thing that was named, resolve relative time against the record, distinguish
+  states precisely, do not generalise across records, do not invent causes,
+  treat absence as information, and surface conflicting records.
+- Snapshots open with an on_this_record index. The full record remains the
+  authority.
+- Closing now follows intent. A goodbye ends the call without another offer;
+  thanks alone may invite one more question.
+- Strip quotation marks in the speech normaliser.
+- Store one record per person under data/beneficiaries/, named by registration
+  number. The file name is the index; a record is read only after a match.
+- Add a second demo record, FID1122334455, enrolled in Pradhan Mantri Awaas
+  Yojana - Gramin with a completed instalment and its transaction reference.
+  Both records carry the same field set.
+- The record opening says "a benefit" for one programme and "multiple
+  benefits" for several.
+- Add speech judgement to the single-agent constitution: prefer meaning over
+  labels, do not volunteer long references, compress lists, but never omit an
+  amount, a date, a required step or a reason.
+- Add a third demo record, FID5566778899, enrolled in the Fertilizer Support
+  Programme with one cycle delivered and the next scheduled ahead.
+- Add service tone rules to the single-agent constitution: never imply a
+  question was unnecessary, avoid minimising words, lead with reassurance when
+  the record supports it, take the lead on what matters, and close with an
+  offer.
+- Remove scripts/smoke_turn.py, superseded and stale.
+
 Version 0.4.0 (2026-11-10)
 --------------------------
 - Add a deterministic opening: the caller speaks first, the welcome is said

@@ -16,6 +16,10 @@ class Beneficiary360Client(Protocol):
     @property
     def registered_mobile(self) -> str: ...
 
+    def known_identifiers(self) -> tuple[str, ...]:
+        """Every identifier this client can resolve. Used to match speech."""
+        ...
+
     def fetch_blob(self, identifier: str) -> Beneficiary360Blob: ...
 
     def find_by_identifier(self, identifier: str) -> Beneficiary360Blob | None:

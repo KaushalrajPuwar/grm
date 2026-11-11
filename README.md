@@ -104,7 +104,7 @@ Locked 2026-09-22. Full rationale lives in [ARCHITECTURE.md](ARCHITECTURE.md) an
 | Harness | Plain async turn loop, two-agent or single-agent behind a flag |
 | Model clients | LangChain chat models, one fixed instance per agent |
 | API | FastAPI plus Pydantic v2, one dialogue service behind the MCP tool layer |
-| Beneficiary 360 | Typed client behind an interface, mock now, real client later |
+| Beneficiary 360 | Typed client behind an interface, one JSON file per person under `data/beneficiaries/` |
 | Channels | MCP Streamable HTTP (FastMCP), MCP only |
 | Sessions | In-process registry, single process (Redis deferred) |
 | Blob snapshots | Held in memory on the session, dropped on reset (SQLite deferred) |

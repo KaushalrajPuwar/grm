@@ -180,13 +180,13 @@ def main() -> int:
 
     # Isolate this check from any code left behind by an earlier run.
     ISSUED_OTP.unlink(missing_ok=True)
-    unknown = client.call("route_turn", session_id=session, text="FID-0000000000", channel="voice")
+    unknown = client.call("route_turn", session_id=session, text="FID0000000000", channel="voice")
     check("unknown identifier reveals nothing", unknown["authenticated"] is False)
     check("unknown identifier issues no code", not published_otp())
 
     auto_verify = str(contract.get("identity_check", "")).startswith("auto")
     identified = client.call(
-        "route_turn", session_id=session, text="FID-9988776655", channel="voice"
+        "route_turn", session_id=session, text="FID9988776655", channel="voice"
     )
 
     if auto_verify:
@@ -223,7 +223,7 @@ def main() -> int:
     banner("Wrong person on the record")
     other = f"voice-{uuid.uuid4().hex[:8]}"
     client.call("route_turn", session_id=other, text="", channel="voice")
-    client.call("route_turn", session_id=other, text="FID-9988776655", channel="voice")
+    client.call("route_turn", session_id=other, text="FID9988776655", channel="voice")
     denied = client.call("route_turn", session_id=other, text="no, that is not me", channel="voice")
     check("denying the name drops verification", denied["authenticated"] is False)
     check("denying the name asks for a number again", denied["expects"] == "beneficiary_id")
@@ -231,9 +231,54 @@ def main() -> int:
     after_denial = client.call("session_status", session_id=other)
     check("denied session is unverified", after_denial["authenticated"] is False)
 
+    banner("Spoken registration number")
+    spoken = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=spoken, text="Hello", channel="voice")
+    spoken_id = client.call(
+        "route_turn",
+        session_id=spoken,
+        text=("my FID is nine nine eight, and eight hundred seventy seven, and six six five five"),
+        channel="voice",
+    )
+    check("a spoken registration number resolves", spoken_id["authenticated"] is True)
+    check(
+        "a spoken number asks for name confirmation",
+        spoken_id["expects"] == "confirmation",
+        spoken_id["reply"][:120],
+    )
+
+    banner("A scheme the caller names is not on the record")
+    other_scheme = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=other_scheme, text="Hello", channel="voice")
+    client.call("route_turn", session_id=other_scheme, text="FID9988776655", channel="voice")
+    client.call("route_turn", session_id=other_scheme, text="yes", channel="voice")
+    mismatch = client.call(
+        "route_turn",
+        session_id=other_scheme,
+        text="I did not receive the subsidy for my solar panel scheme",
+        channel="voice",
+    )
+    answer = mismatch["reply"].lower()
+    check("names the scheme that is on the record", "solar pump" in answer)
+    check(
+        "asks whether that is the one they meant",
+        "?" in answer and any(word in answer for word in ("refer", "mean", "do not see")),
+        mismatch["reply"][:160],
+    )
+    check(
+        "does not silently treat the named scheme as theirs",
+        "your solar panel" not in answer,
+        mismatch["reply"][:160],
+    )
+
     banner("Route A over MCP: delivery already moving")
     lookup = client.call("route_turn", session_id=session, text="what is my LPG connection number?")
     check("reference lookup is answered by the expected agent", lookup["owner"] == lookup_owner)
+    check(
+        "reference lookup returns the connection number",
+        "44719920" in re.sub(r"\D", "", lookup["reply"]),
+        lookup["reply"][:120],
+    )
 
     moving = client.call(
         "route_turn", session_id=session, text="when will my cylinder arrive?", channel="voice"
@@ -268,6 +313,83 @@ def main() -> int:
         "a route to resolution is offered",
         bool(re.search(r"grievance|ticket|complaint", blocked["reply"], re.IGNORECASE)),
         blocked["reply"][:160],
+    )
+
+    banner("A second record")
+    second = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=second, text="Hello", channel="voice")
+    second_id = client.call("route_turn", session_id=second, text="FID1122334455", channel="voice")
+    check("a second registration number resolves", second_id["authenticated"] is True)
+    check("the second record names its own person", "Sunita" in second_id["reply"])
+    second_open = client.call("route_turn", session_id=second, text="yes", channel="voice")
+    check("the second record opens its own programmes", "Awaas" in second_open["reply"])
+    check("the second record does not leak the first", "Lakshmi" not in second_open["reply"])
+
+    banner("A third record, scheduled ahead")
+    fert = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=fert, text="Hello", channel="voice")
+    fert_id = client.call("route_turn", session_id=fert, text="FID5566778899", channel="voice")
+    check("a third registration number resolves", fert_id["authenticated"] is True)
+    check("the third record names its own person", "Ramesh" in fert_id["reply"])
+    client.call("route_turn", session_id=fert, text="yes", channel="voice")
+    scheduled = client.call(
+        "route_turn",
+        session_id=fert,
+        text="why did I not receive my fertilizer subsidy?",
+        channel="voice",
+    )
+    fert_answer = scheduled["reply"].lower()
+    check("does not treat a future schedule as a failure", "blocked" not in fert_answer)
+    check(
+        "states the scheduled date",
+        bool(re.search(r"25 november|2026-11-25", fert_answer)),
+        scheduled["reply"][:160],
+    )
+    check("does not dismiss the question", "simply" not in fert_answer, scheduled["reply"][:160])
+    check("leaves the door open", "?" in scheduled["reply"], scheduled["reply"][-120:])
+
+    banner("Speaking, not reciting")
+    pmay = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=pmay, text="Hello", channel="voice")
+    client.call("route_turn", session_id=pmay, text="FID1122334455", channel="voice")
+    client.call("route_turn", session_id=pmay, text="yes", channel="voice")
+    received = client.call(
+        "route_turn", session_id=pmay, text="did I receive my PMAY instalment?", channel="voice"
+    )
+    compact = received["reply"].replace(" ", "")
+    check("answers without reading the reference aloud", "RRN" not in received["reply"])
+    check("does not recite the reference digits", "778812" not in compact)
+    check("still states the amount", "40000" in re.sub(r"\D", "", received["reply"]))
+    check(
+        "still states the date",
+        bool(re.search(r"12 october 2026|2026-10-12", received["reply"], re.IGNORECASE)),
+        received["reply"][:160],
+    )
+
+    banner("Closing the call")
+    closing = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=closing, text="Hello", channel="voice")
+    client.call("route_turn", session_id=closing, text="FID9988776655", channel="voice")
+    client.call("route_turn", session_id=closing, text="yes", channel="voice")
+    client.call(
+        "route_turn", session_id=closing, text="what is my LPG connection number?", channel="voice"
+    )
+    thanks = client.call("route_turn", session_id=closing, text="thanks", channel="voice")
+    check("thanks alone offers one more chance", "?" in thanks["reply"], thanks["reply"][:120])
+
+    farewell = client.call("route_turn", session_id=closing, text="thanks, bye", channel="voice")
+    check(
+        "a goodbye closes without another question",
+        "?" not in farewell["reply"],
+        farewell["reply"][:120],
+    )
+    check(
+        "the closing is warm",
+        any(
+            word in farewell["reply"].lower()
+            for word in ("goodbye", "take care", "thank you for calling")
+        ),
+        farewell["reply"][:120],
     )
 
     banner("Session lifecycle")

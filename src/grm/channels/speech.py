@@ -39,6 +39,9 @@ _BRACKETED = re.compile(r"\(([^()]*)\)")
 #: Written as escapes so the source itself contains no ambiguous characters.
 _DASHES = re.compile(r"\s*[\u2014\u2013]\s*")
 
+#: Double and curly quotes around ordinary words. Apostrophes are left alone.
+_QUOTES = re.compile(r'["\u201c\u201d\u2018\u2019]')
+
 #: Symbols that should be words.
 _SYMBOLS = (
     ("&", " and "),
@@ -61,6 +64,7 @@ def to_speech(text: str) -> str:
     for pattern, replacement in _CURRENCY:
         out = pattern.sub(replacement, out)
 
+    out = _QUOTES.sub("", out)
     out = _BRACKETED.sub(lambda m: f", {m.group(1).strip()}, ", out)
     out = _DASHES.sub(", ", out)
 

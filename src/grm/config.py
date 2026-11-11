@@ -20,10 +20,11 @@ load_dotenv(override=True)
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent.parent
 
-#: Local Beneficiary 360 response standing in for the live API until it lands.
-#: Demo content only: an LPG subsidy case with a dispatched cylinder and a
-#: blocked subsidy release.
-SAMPLE_BLOB_PATH = PACKAGE_ROOT / "data" / "beneficiary360_demo_lpg.json"
+#: Directory of local Beneficiary 360 responses, standing in for the live API.
+#: One file per person, named after their registration number, for example
+#: FID9988776655.json. The file name is the index; the record is only read
+#: after a caller has been matched to it.
+SAMPLE_BLOB_DIR = PACKAGE_ROOT / "data" / "beneficiaries"
 
 #: Demo contact for the OTP flow. The response schema carries no mobile number,
 #: so the demo hardcodes one and masks all but the last three digits.
