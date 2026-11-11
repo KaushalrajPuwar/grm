@@ -63,6 +63,9 @@ def test_non_identifiers_do_not_resolve(utterance: str) -> None:
     [
         "Yes, my FID is fifty five, sixty six, seventy seven, eighty eight, ninety nine.",
         "fifty-five, sixty-six, seventy-seven, eighty-eight, ninety-nine",
+        # ASR punctuation lands between the parts of each number word.
+        "Yes, my FID is fifty, five, sixty, six, seventy, seven, eighty, eight, ninety, nine.",
+        "fifty. five. sixty. six. seventy. seven. eighty. eight. ninety. nine.",
         "my registration number is 55 66 77 88 99",
     ],
 )

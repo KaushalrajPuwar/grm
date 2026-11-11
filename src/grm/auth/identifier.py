@@ -126,6 +126,11 @@ def normalise_spoken(text: str) -> str:
     double eight seven seven" both collapse to the same digits.
     """
     lowered = text.lower()
+    # Speech recognition inserts commas and full stops between words, including
+    # between the parts of a number word: "fifty, five". Treat punctuation as a
+    # space before joining tens and units, otherwise "fifty" and "five" are read
+    # as two separate numbers instead of fifty five.
+    lowered = re.sub(r"[,.;:!?]", " ", lowered)
     teens = _TEENS_PATTERN.sub(lambda m: _TEENS[m.group(1)], lowered)
     tens = _TENS_PHRASE.sub(_expand_tens, teens)
     doubled = _DOUBLED.sub(_expand_doubled, tens)
