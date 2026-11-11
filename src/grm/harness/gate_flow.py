@@ -37,6 +37,12 @@ LOOKING_INTO_IT = "Let me look into it. Could you please share your registration
 #: Used when a code fails, so the caller knows the attempt was rejected.
 RETRY_ID = "That did not match any record. Please check the registration number and try again."
 
+#: Used when the caller gave a number that matches no record.
+NOT_FOUND = (
+    "I could not find a record with that registration number. "
+    "Could you please check it and share it again?"
+)
+
 OTP_PROMPT = "Thank you. I have sent a four digit code to your registered mobile {masked}."
 
 OTP_RETRY = (
@@ -76,13 +82,15 @@ async def _handle_identifier(
 ) -> tuple[str, str]:
     # Speech first: the resolver normalises what was said and matches it against
     # the record. Only a real match returns an identifier.
-    identifier = await resolve_identifier(text, client, adapter)
-    if identifier is None:
-        return LOOKING_INTO_IT, "id_prompt"
+    resolution = await resolve_identifier(text, client, adapter)
+    if resolution.identifier is None:
+        # A number was spoken but matches nothing, or no number was spoken.
+        # Those are different failures and deserve different answers.
+        return (NOT_FOUND if resolution.attempted else LOOKING_INTO_IT), "id_prompt"
 
     # issue_otp runs only once a record matches, so an unknown identifier never
     # publishes a live code to the issuer process.
-    state = submit_identifier(session, identifier, client, issue_otp)
+    state = submit_identifier(session, resolution.identifier, client, issue_otp)
 
     # No reply text here: once identity resolves, the caller is asked to confirm
     # the name, and that line needs the record. The turn loop builds it.

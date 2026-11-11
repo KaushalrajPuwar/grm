@@ -183,6 +183,16 @@ def main() -> int:
     unknown = client.call("route_turn", session_id=session, text="FID0000000000", channel="voice")
     check("unknown identifier reveals nothing", unknown["authenticated"] is False)
     check("unknown identifier issues no code", not published_otp())
+    check(
+        "a wrong number is reported as not found",
+        "could not find" in unknown["reply"].lower(),
+        unknown["reply"][:160],
+    )
+    check(
+        "a wrong number asks for the correct one",
+        "check it" in unknown["reply"].lower() or "again" in unknown["reply"].lower(),
+        unknown["reply"][:160],
+    )
 
     auto_verify = str(contract.get("identity_check", "")).startswith("auto")
     identified = client.call(
@@ -260,11 +270,14 @@ def main() -> int:
     )
     answer = mismatch["reply"].lower()
     check("names the scheme that is on the record", "solar pump" in answer)
+    # Any correct handling names both what the caller said and what the record
+    # holds, then asks. Phrasing varies, so assert the substance.
     check(
-        "asks whether that is the one they meant",
-        "?" in answer and any(word in answer for word in ("refer", "mean", "do not see")),
+        "acknowledges the name the caller used",
+        "panel" in answer and "pump" in answer,
         mismatch["reply"][:160],
     )
+    check("asks whether that is the one they meant", "?" in answer, mismatch["reply"][:160])
     check(
         "does not silently treat the named scheme as theirs",
         "your solar panel" not in answer,
@@ -325,6 +338,43 @@ def main() -> int:
     check("the second record opens its own programmes", "Awaas" in second_open["reply"])
     check("the second record does not leak the first", "Lakshmi" not in second_open["reply"])
 
+    banner("A programme the caller is not enrolled in")
+    absent = f"voice-{uuid.uuid4().hex[:8]}"
+    client.call("route_turn", session_id=absent, text="Hello", channel="voice")
+    client.call("route_turn", session_id=absent, text="FID9988776655", channel="voice")
+    client.call("route_turn", session_id=absent, text="yes", channel="voice")
+    not_enrolled = client.call(
+        "route_turn",
+        session_id=absent,
+        text="am I enrolled in the fertilizer programme?",
+        channel="voice",
+    )
+    absent_answer = not_enrolled["reply"].lower()
+    check("names what is on the record", "lpg" in absent_answer)
+    check(
+        "does not ask for information it cannot use",
+        "tell me more" not in absent_answer and "more about it" not in absent_answer,
+        not_enrolled["reply"][:160],
+    )
+    check(
+        "does not speculate about why it is missing",
+        "different name" not in absent_answer,
+        not_enrolled["reply"][:160],
+    )
+
+    enrol = client.call(
+        "route_turn",
+        session_id=absent,
+        text="can you enrol me in the fertilizer programme?",
+        channel="voice",
+    )
+    enrol_answer = enrol["reply"].lower()
+    check(
+        "refuses enrolment plainly",
+        "cannot enrol" in enrol_answer or "not able to enrol" in enrol_answer,
+        enrol["reply"][:160],
+    )
+
     banner("A third record, scheduled ahead")
     fert = f"voice-{uuid.uuid4().hex[:8]}"
     client.call("route_turn", session_id=fert, text="Hello", channel="voice")
@@ -339,7 +389,14 @@ def main() -> int:
         channel="voice",
     )
     fert_answer = scheduled["reply"].lower()
-    check("does not treat a future schedule as a failure", "blocked" not in fert_answer)
+    check(
+        "presents the schedule as on track",
+        any(
+            phrase in fert_answer
+            for phrase in ("scheduled", "on track", "not been dispatched", "ahead of us")
+        ),
+        scheduled["reply"][:160],
+    )
     check(
         "states the scheduled date",
         bool(re.search(r"25 november|2026-11-25", fert_answer)),

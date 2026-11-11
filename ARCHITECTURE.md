@@ -131,7 +131,8 @@ caller has confirmed their name.
 | Turn | Stage | Speaker | Text |
 | --- | --- | --- | --- |
 | first turn, whatever it says | greet | code | "Hello and welcome to OpenG2P support service. How can I help you today?" |
-| any later turn that is not a valid number | id_prompt | code | "Let me look into it. Could you please share your registration number?" |
+| a number that matches no record | id_prompt | code | "I could not find a record with that registration number. Could you please check it and share it again?" |
+| a turn with no number in it | id_prompt | code | "Let me look into it. Could you please share your registration number?" |
 | valid registration number | confirm_identity | code | "Thank you. Am I talking with {full name}?" |
 | yes | open | code | "Thank you for confirming. I am seeing that you are registered for multiple benefits: {list}." |
 | no | id_prompt | code | verification and snapshot dropped, number requested again |
@@ -193,6 +194,11 @@ that a question was unnecessary, avoids minimising words, leads with
 reassurance when the record supports it, takes the lead on anything that
 changes what the caller should do, and closes with an offer rather than a
 verdict.
+
+It also requires a clarifying question to change the next action. It must not
+invite detail about something the record does not contain, must not speculate
+about why something is missing, and must state plainly what it cannot do:
+enrol, add a programme, change a record, or transfer a case.
 
 It also carries judgement about what is worth saying aloud. It prefers meaning to labels, does not volunteer long reference
 numbers, compresses lists and status vocabulary, and asks whether a good human

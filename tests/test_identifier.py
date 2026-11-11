@@ -58,6 +58,14 @@ def test_non_identifiers_do_not_resolve(utterance: str) -> None:
     assert not any(match(candidate, KNOWN) for candidate in candidates(utterance))
 
 
+def test_a_wrong_number_still_counts_as_an_attempt() -> None:
+    """The gate answers a wrong number differently from plain speech."""
+    assert candidates("FID0000000000")
+    assert candidates("my number is 1112223334")
+    assert not candidates("I have a complaint")
+    assert not candidates("hello")
+
+
 def test_normalisation_ignores_filler_and_separators() -> None:
     assert normalise_spoken("my FID is 99-88-77-66-55") == "9988776655"
     assert normalise_spoken("99 88 77 66 55") == "9988776655"

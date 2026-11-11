@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 from grm.agents.base import AgentAdapter
 from grm.beneficiary360.client import Beneficiary360Client
@@ -87,8 +88,21 @@ _FID_PATTERN = re.compile(r"fid\d+")
 #: A bare run of digits long enough to be an identifier, not an amount.
 _DIGIT_RUN = re.compile(r"\d{6,}")
 
-#: The model is asked for digits only. Anything else is ignored.
-_MODEL_DIGITS = re.compile(r"\b(\d{6,})\b")
+#: Any digits in a model reply. Used to tell "no number was spoken" from
+#: "a number was spoken but it matches no record".
+_ANY_DIGITS = re.compile(r"\d+")
+
+
+@dataclass(frozen=True)
+class Resolution:
+    """What an utterance turned out to contain.
+
+    `attempted` distinguishes a caller who said no number at all from one who
+    said a number that matches no record. The gate answers those differently.
+    """
+
+    identifier: str | None
+    attempted: bool
 
 
 def _expand_tens(match: re.Match[str]) -> str:
@@ -164,16 +178,17 @@ def _model_prompt(transcript: str) -> str:
 
 async def resolve_identifier(
     text: str, client: Beneficiary360Client, adapter: AgentAdapter
-) -> str | None:
-    """Resolve an utterance to a canonical identifier, or None."""
+) -> Resolution:
+    """Resolve an utterance to a canonical identifier, and say what happened."""
     log = get_logger()
     known = client.known_identifiers()
+    found = candidates(text)
 
-    for candidate in candidates(text):
+    for candidate in found:
         hit = match(candidate, known)
         if hit is not None:
             log.info("identifier resolved without a model", stage="gate", path="deterministic")
-            return hit
+            return Resolution(hit, True)
 
     # Stage two. The model only proposes digits; the match below is still exact.
     try:
@@ -184,22 +199,22 @@ async def resolve_identifier(
             stage="gate",
             error=type(exc).__name__,
         )
-        return None
+        return Resolution(None, bool(found))
 
     raw = message.content if isinstance(message.content, str) else str(message.content)
     if "none" in raw.strip().lower():
         log.info("identifier not present in the utterance", stage="gate", path="model")
-        return None
+        return Resolution(None, bool(found))
 
-    found = _MODEL_DIGITS.search(raw)
-    if not found:
+    digits = _ANY_DIGITS.search(raw)
+    if not digits:
         log.info("model returned no digits", stage="gate", path="model")
-        return None
+        return Resolution(None, bool(found))
 
-    hit = match(found.group(1), known)
+    hit = match(digits.group(0), known)
     if hit is not None:
         log.info("identifier resolved by a model", stage="gate", path="model")
-        return hit
+        return Resolution(hit, True)
 
     log.info("model proposed digits that match no record", stage="gate", path="model")
-    return None
+    return Resolution(None, True)

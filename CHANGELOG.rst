@@ -43,6 +43,13 @@ Version 0.5.0 (2026-11-11)
   question was unnecessary, avoid minimising words, lead with reassurance when
   the record supports it, take the lead on what matters, and close with an
   offer.
+- Ask a clarifying question only when the answer changes the next action. Do
+  not invite detail about something the record does not contain, and do not
+  speculate about why it is missing.
+- State plainly what the agent cannot do: enrol, add a programme, change a
+  record, or transfer a case.
+- A registration number that matches no record is now reported as not found,
+  separately from a turn that contained no number at all.
 - Remove scripts/smoke_turn.py, superseded and stale.
 
 Version 0.4.0 (2026-11-10)

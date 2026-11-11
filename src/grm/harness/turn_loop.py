@@ -23,7 +23,7 @@ from grm.auth.gate import AuthSession, drop_verification, release_blob
 from grm.beneficiary360.client import Beneficiary360Client
 from grm.beneficiary360.schemas import Beneficiary360Blob
 from grm.config import get_settings
-from grm.harness.gate_flow import LOOKING_INTO_IT, WELCOME, handle_gate_message
+from grm.harness.gate_flow import WELCOME, handle_gate_message
 from grm.harness.routing import (
     HANDOFF_INTENT,
     MAX_REVISIONS,
@@ -133,10 +133,10 @@ async def _handle_pre_auth(
     """The identity gate, before any record is open.
 
     The caller always speaks first. Their first turn is answered with the
-    welcome, once. Every later turn is an attempt at the registration number:
-    a match moves to name confirmation, and anything else gets the same request
-    for the number. There is no content sniffing, because a distressed caller
-    may open anywhere.
+    welcome, once. Every later turn is an attempt at the registration number.
+    A match moves to name confirmation. A number that matches no record is
+    reported as not found. A turn with no number at all is answered with a
+    request for the number.
     """
     log = get_logger()
 
@@ -179,12 +179,9 @@ async def _handle_pre_auth(
         session.history.append({"role": "assistant", "text": state.reply})
         return state
 
-    if stage == "otp_sent":
-        state.reply = reply
-        return state
-
-    # Not a registration number. Ask for it again, in the same words every time.
-    state.reply = LOOKING_INTO_IT
+    # The gate already chose the words: a number that matches nothing and a
+    # turn with no number at all get different answers.
+    state.reply = reply
     return state
 
 
