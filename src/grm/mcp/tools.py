@@ -26,6 +26,7 @@ from grm.channels.service import get_service
 from grm.config import get_settings
 from grm.mcp.constants import INSTRUCTIONS, SERVER_NAME, SERVER_VERSION
 from grm.observability.logging import get_logger
+from grm.observability.trace import trace_error, trace_inbound, trace_outbound
 
 mcp: FastMCP = FastMCP(
     name=SERVER_NAME,
@@ -97,11 +98,14 @@ async def route_turn(session_id: str, text: str, channel: str = "voice") -> dict
     """
     try:
         resolved = _resolve_channel(channel)
+        trace_inbound(session_id, resolved, text or "")
         response = await get_service().turn(
             TurnRequest(session_id=session_id, text=text or "", channel=resolved)
         )
+        trace_outbound(session_id, response.owner, response.reply)
         return response.model_dump(mode="json")
     except Exception as exc:
+        trace_error(session_id, type(exc).__name__)
         _fail("route_turn", exc)
 
 

@@ -34,6 +34,10 @@ DEMO_REGISTERED_MOBILE = "9845012345"
 #: human reads the code in a second terminal and types it into the chat window.
 OTP_ISSUE_PATH = PROJECT_ROOT / "var" / "demo_otp_issued.json"
 
+#: Live trace of what the MCP layer receives and returns. Written only when
+#: MCP_TRACE is on. Contains raw beneficiary text, so it is demo-only.
+TRACE_LOG_PATH = PROJECT_ROOT / "var" / "mcp_trace.log"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -48,6 +52,11 @@ class Settings(BaseSettings):
     #: directly. The QA code and prompt stay intact, so turning it back on is
     #: one environment change and a restart.
     qa_enabled: bool = False
+
+    #: Debug switch. True writes every inbound turn and reply to var/mcp_trace.log
+    #: so a terminal can watch exactly what the service receives. Contains raw
+    #: beneficiary text; keep false outside debugging.
+    mcp_trace: bool = False
 
     #: One switch for the agent architecture. False keeps the two-agent flow:
     #: chat routes, reasoning analyses. True collapses both responsibilities

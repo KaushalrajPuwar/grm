@@ -50,6 +50,8 @@ Version 0.5.0 (2026-11-11)
   record, or transfer a case.
 - A registration number that matches no record is now reported as not found,
   separately from a turn that contained no number at all.
+- Add MCP_TRACE, an opt-in boundary trace of every inbound turn and reply, with
+  scripts/trace_mcp.py to print it as a readable feed.
 - Remove scripts/smoke_turn.py, superseded and stale.
 
 Version 0.4.0 (2026-11-10)

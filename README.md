@@ -200,6 +200,35 @@ curl -s -X POST http://127.0.0.1:8100/mcp \
 | `reset_session` | Hangup: drop verification and the snapshot together |
 | `describe_contract` | Integration notes, in the protocol, so the voice team never reads our source |
 
+### Tracing what the service receives
+
+When a caller's input behaves differently from what you expect, turn on the
+boundary trace. The service then writes every inbound turn and reply to
+`var/mcp_trace.log`, and a script prints them cleanly.
+
+```bash
+# .env
+MCP_TRACE=true
+
+sudo systemctl restart grm-mcp
+python scripts/trace_mcp.py
+```
+
+Output:
+
+```
+[07:22:53] IN  session=trace-demo channel=voice length=74
+    "My FID is fifty five, sixty six, seventy seven, eighty eight, ninety nine."
+
+[07:22:53] OUT session=trace-demo owner=chat length=42
+    "Thank you. Am I talking with Ramesh Patil?"
+```
+
+The `IN` line is the exact string that reached the service, including its
+punctuation. `--once` prints what is already in the file and exits. The log
+contains raw beneficiary text, so keep `MCP_TRACE=false` outside debugging and
+delete `var/mcp_trace.log` when you are done.
+
 Verify the contract end to end while the MCP server is running:
 
 ```bash
