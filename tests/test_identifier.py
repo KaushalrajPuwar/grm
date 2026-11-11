@@ -58,6 +58,19 @@ def test_non_identifiers_do_not_resolve(utterance: str) -> None:
     assert not any(match(candidate, KNOWN) for candidate in candidates(utterance))
 
 
+@pytest.mark.parametrize(
+    "utterance",
+    [
+        "Yes, my FID is fifty five, sixty six, seventy seven, eighty eight, ninety nine.",
+        "fifty-five, sixty-six, seventy-seven, eighty-eight, ninety-nine",
+        "my registration number is 55 66 77 88 99",
+    ],
+)
+def test_tens_words_in_groups(utterance: str) -> None:
+    """Tens words must join into pairs, not be read as separate digits."""
+    assert any(match(candidate, ("FID5566778899",)) for candidate in candidates(utterance))
+
+
 def test_a_wrong_number_still_counts_as_an_attempt() -> None:
     """The gate answers a wrong number differently from plain speech."""
     assert candidates("FID0000000000")
