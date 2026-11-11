@@ -76,6 +76,9 @@ _TENS_PHRASE = re.compile(r"\b(" + "|".join(_TENS) + r")(?:[\s-]+(" + _UNIT_WORD
 
 _TEENS_PATTERN = re.compile(r"\b(" + "|".join(_TEENS) + r")\b")
 
+#: Some recognisers run the pair together: "fiftyfive" rather than "fifty five".
+_TENS_COMPOUND = re.compile(r"\b(" + "|".join(_TENS) + r")(" + _UNIT_WORDS + r")\b")
+
 #: "double nine" and "triple eight", the way people read grouped digits.
 _DOUBLED = re.compile(r"\b(double|triple)\s+(" + "|".join(_DIGIT_WORDS) + r"|\d)\b")
 
@@ -132,7 +135,8 @@ def normalise_spoken(text: str) -> str:
     # as two separate numbers instead of fifty five.
     lowered = re.sub(r"[,.;:!?]", " ", lowered)
     teens = _TEENS_PATTERN.sub(lambda m: _TEENS[m.group(1)], lowered)
-    tens = _TENS_PHRASE.sub(_expand_tens, teens)
+    compound = _TENS_COMPOUND.sub(lambda m: _TENS[m.group(1)] + _DIGIT_WORDS[m.group(2)], teens)
+    tens = _TENS_PHRASE.sub(_expand_tens, compound)
     doubled = _DOUBLED.sub(_expand_doubled, tens)
     with_digits = _DIGIT_WORD_PATTERN.sub(lambda m: _DIGIT_WORDS[m.group(1)], doubled)
     without_filler = _FILLER.sub("", with_digits)
